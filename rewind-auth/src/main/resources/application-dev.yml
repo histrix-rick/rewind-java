@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://101.32.10.240:5432/rewind_db?currentSchema=public
+    username: ${DB_USERNAME:user_N7TYjT}
+    password: ${DB_PASSWORD:password_dSKCGm}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+# 身份证二要素认证（开发环境可启用测试）
+id-card-check:
+  enabled: true
+  app-code: caea5a05b2f8459292561c095a4ec317
+  api-url: https://kzidcardv1.market.alicloudapi.com/api-mall/api/id_card/check

@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://101.32.10.240:5432/rewind_db}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    show-sql: false
+
+# 身份证二要素认证（生产环境启用，需配置app-code）
+id-card-check:
+  enabled: true
+  app-code: ${ID_CARD_CHECK_APP_CODE:}
+  api-url: https://kzidcardv1.market.alicloudapi.com/api-mall/api/id_card/check
+

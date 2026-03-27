@@ -1,0 +1,72 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: rewind-app
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 30000
+      connection-test-query: SELECT 1
+      validation-timeout: 5000
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  data:
+    redis:
+      host: ${REDIS_HOST:101.32.10.240}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:6}
+      password: ${REDIS_PASSWORD:redis_yDBW6Q}
+      timeout: 10000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+jwt:
+  secret: ${JWT_SECRET:Rewind.ai_Secret_Key_2024_JWT_Token_Very_Long_Secret_For_HS256}
+  expiration: 604800000
+  header: Authorization
+  prefix: Bearer
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    groups-order: DESC
+  group-configs:
+    - group: app-api
+      paths-to-match: /app/**
+      packages-to-scan: com.rewindai.app
+
+app:
+  storage:
+    local:
+      base-path: ./uploads
+      base-url: http://localhost:8082
+  doubao:
+    api-key: ${DOUBAO_API_KEY:f2e69cac-bc05-4dda-be7b-39b9293789ac}
+    endpoint: ${DOUBAO_ENDPOINT:https://ark.cn-beijing.volces.com/api/v3/responses}
+    model: ${DOUBAO_MODEL:doubao-seed-1-8-251228}
+    timeout: 30000

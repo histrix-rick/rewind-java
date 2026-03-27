@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://101.32.10.240:5432/rewind_db
+    username: ${DB_USERNAME:user_N7TYjT}
+    password: ${DB_PASSWORD:password_dSKCGm}
+  jpa:
+    show-sql: true
