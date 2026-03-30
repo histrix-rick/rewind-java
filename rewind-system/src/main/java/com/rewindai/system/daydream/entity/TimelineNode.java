@@ -107,6 +107,10 @@ public class TimelineNode {
     @Builder.Default
     private Boolean isPublic = false;
 
+    @Column(name = "like_count")
+    @Builder.Default
+    private Integer likeCount = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;

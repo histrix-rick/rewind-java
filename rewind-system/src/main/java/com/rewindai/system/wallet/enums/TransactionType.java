@@ -16,7 +16,9 @@ public enum TransactionType {
     TRANSFER_IN(4, "转入"),
     TRANSFER_OUT(5, "转出"),
     ADMIN_GRANT(6, "管理员发放"),
-    ADMIN_DEDUCT(7, "管理员扣除");
+    ADMIN_DEDUCT(7, "管理员扣除"),
+    REWARD_SEND(8, "打赏送出"),
+    REWARD_RECEIVE(9, "打赏收入");
 
     private final Integer code;
     private final String desc;

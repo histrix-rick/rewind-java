@@ -56,10 +56,15 @@ public class TimelineController {
             @RequestParam(required = false) UUID branchId,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        var daydreamOpt = daydreamService.findAccessibleById(daydreamId, userId);
+        var daydream = daydreamOpt.orElseThrow(() -> new RuntimeException("白日梦不存在或无权限访问"));
 
-        List<TimelineNode> nodes = timelineService.getTimeline(daydreamId, branchId);
+        // 判断是否是所有者：不是所有者则过滤掉失败节点
+        boolean isOwner = daydream.getUserId().equals(userId);
+        List<TimelineNode> nodes = isOwner ?
+                timelineService.getTimeline(daydreamId, branchId) :
+                timelineService.getTimelineFiltered(daydreamId, branchId);
+
         return Result.success(nodes.stream().map(TimelineNodeResponse::from).toList());
     }
 
@@ -71,8 +76,8 @@ public class TimelineController {
             @PageableDefault(size = 20, sort = "sequenceNum", direction = Sort.Direction.ASC) Pageable pageable,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        daydreamService.findAccessibleById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限访问"));
 
         Page<TimelineNode> nodes = timelineService.getTimelinePage(daydreamId, branchId, pageable);
         return Result.success(nodes.map(TimelineNodeResponse::from));
@@ -107,8 +112,9 @@ public class TimelineController {
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
 
-        var daydream = daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        // 验证是所有者才能修改
+        var daydream = daydreamService.findModifiableById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限修改"));
 
         // 1. 先创建一个PROCESSING状态的节点，立即返回ID
         TimelineNode pendingNode = timelineService.addPendingNode(
@@ -250,8 +256,8 @@ public class TimelineController {
             @PathVariable UUID nodeId,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        daydreamService.findAccessibleById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限访问"));
 
         TimelineNode node = timelineService.findById(nodeId)
                 .orElseThrow(() -> new RuntimeException("节点不存在"));
@@ -274,6 +280,9 @@ public class TimelineController {
             @RequestParam(required = false) UUID branchId,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
+        // 验证是所有者才能修改
+        daydreamService.findModifiableById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限修改"));
         timelineService.undoLastNode(userId, daydreamId, branchId);
         return Result.success();
     }
@@ -286,8 +295,9 @@ public class TimelineController {
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
 
-        daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        // 验证是所有者才能修改
+        daydreamService.findModifiableById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限修改"));
 
         TimelineNode node = timelineService.findById(nodeId)
                 .orElseThrow(() -> new RuntimeException("节点不存在"));
@@ -346,14 +356,31 @@ public class TimelineController {
 
     @Operation(summary = "从指定节点创建新分支（时间轴回溯）")
     @PostMapping("/{nodeId}/branch")
-    public Result<DreamBranch> createBranch(
+    public Result<java.util.Map<String, String>> createBranch(
             @PathVariable UUID daydreamId,
             @PathVariable UUID nodeId,
             @Valid @RequestBody CreateBranchRequest request,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
+        // 验证是所有者才能修改
+        daydreamService.findModifiableById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限修改"));
         DreamBranch branch = timelineService.createBranchFromNode(userId, daydreamId, nodeId, request.getBranchName());
-        return Result.success(branch);
+        return Result.success(java.util.Map.of("branchId", branch.getId().toString()));
+    }
+
+    @Operation(summary = "回滚到指定节点（删除该节点之后的所有决策）")
+    @PostMapping("/{nodeId}/rollback")
+    public Result<Void> rollbackToNode(
+            @PathVariable UUID daydreamId,
+            @PathVariable UUID nodeId,
+            Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        // 验证是所有者才能修改
+        daydreamService.findModifiableById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限修改"));
+        timelineService.rollbackToNode(userId, daydreamId, nodeId);
+        return Result.success();
     }
 
     @Operation(summary = "获取节点详情")
@@ -363,8 +390,8 @@ public class TimelineController {
             @PathVariable UUID nodeId,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        daydreamService.findAccessibleById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限访问"));
 
         return timelineService.findById(nodeId)
                 .map(TimelineNodeResponse::from)

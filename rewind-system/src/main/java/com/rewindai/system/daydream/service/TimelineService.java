@@ -55,6 +55,29 @@ public class TimelineService {
                 dreamId, branchId, Sort.by(Sort.Direction.ASC, "sequenceNum"));
     }
 
+    /**
+     * 获取时间轴（过滤掉失败节点）
+     * 用于访问他人梦境时，不显示判定失败的节点
+     */
+    public List<TimelineNode> getTimelineFiltered(UUID dreamId, UUID branchId) {
+        List<TimelineNode> allNodes = getTimeline(dreamId, branchId);
+        return allNodes.stream()
+                .filter(node -> {
+                    // 只显示成功或处理中的节点，不显示失败的节点
+                    // 1. 如果是FAILED状态，过滤掉
+                    if (node.getJudgmentStatus() == com.rewindai.system.daydream.enums.JudgmentStatus.FAILED) {
+                        return false;
+                    }
+                    // 2. 如果isApproved明确为false，过滤掉
+                    if (node.getIsApproved() != null && !node.getIsApproved()) {
+                        return false;
+                    }
+                    // 3. 其他情况都显示（null、true、PENDING、PROCESSING、SUCCESS）
+                    return true;
+                })
+                .toList();
+    }
+
     public Page<TimelineNode> getTimelinePage(UUID dreamId, UUID branchId, Pageable pageable) {
         return timelineNodeRepository.findByDreamIdAndBranchId(dreamId, branchId, pageable);
     }
@@ -309,5 +332,52 @@ public class TimelineService {
         log.warn("节点判定失败: nodeId={}, error={}", nodeId, errorMessage);
 
         return saved;
+    }
+
+    /**
+     * 回滚到指定节点
+     * 删除该节点之后的所有节点，保留该节点及之前的节点
+     */
+    @Transactional
+    public void rollbackToNode(UUID userId, UUID dreamId, UUID nodeId) {
+        Daydream daydream = daydreamService.findByIdAndUserId(dreamId, userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.DREAM_NOT_FOUND));
+
+        TimelineNode targetNode = findById(nodeId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BAD_REQUEST, "节点不存在"));
+
+        if (!targetNode.getDreamId().equals(dreamId)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "节点不属于该白日梦");
+        }
+
+        UUID branchId = targetNode.getBranchId();
+        if (branchId == null) {
+            branchId = daydream.getCurrentBranchId();
+        }
+
+        // 删除该节点之后的所有节点（sequenceNum > targetNode.sequenceNum）
+        List<TimelineNode> nodesToDelete = timelineNodeRepository
+                .findByDreamIdAndBranchIdAndSequenceNumGreaterThanOrderBySequenceNumDesc(
+                        dreamId, branchId, targetNode.getSequenceNum());
+
+        for (TimelineNode node : nodesToDelete) {
+            timelineNodeRepository.delete(node);
+        }
+
+        // 更新梦境的currentDate为目标节点的日期
+        daydream.setCurrentDate(targetNode.getNodeDate());
+
+        // 如果目标节点有属性快照，回滚用户属性到该快照状态
+        if (targetNode.getAttributeSnapshot() != null) {
+            try {
+                attributeService.restoreAttributeFromSnapshot(userId, targetNode.getAttributeSnapshot());
+            } catch (Exception e) {
+                log.error("回滚用户属性失败", e);
+                // 不阻断回滚流程，只记录日志
+            }
+        }
+
+        log.info("时间轴回滚成功: daydreamId={}, targetNodeId={}, deletedNodes={}",
+                dreamId, nodeId, nodesToDelete.size());
     }
 }

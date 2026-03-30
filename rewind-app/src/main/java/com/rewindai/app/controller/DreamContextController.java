@@ -44,8 +44,8 @@ public class DreamContextController {
             @PathVariable UUID nodeId,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        daydreamService.findAccessibleById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限访问"));
 
         return dreamContextService.findByDreamIdAndNodeId(daydreamId, nodeId)
                 .map(DreamContextResponse::from)
@@ -59,8 +59,8 @@ public class DreamContextController {
             @PathVariable UUID daydreamId,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        daydreamService.findAccessibleById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限访问"));
 
         List<DreamContext> contexts = dreamContextService.getContextsByDreamId(daydreamId);
         return Result.success(contexts.stream().map(DreamContextResponse::from).toList());
@@ -101,8 +101,8 @@ public class DreamContextController {
             @Valid @RequestBody DreamContextRequest request,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        daydreamService.findModifiableById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限修改"));
 
         DreamContext update = DreamContext.builder()
                 .identityId(request.getIdentityId())
@@ -144,8 +144,8 @@ public class DreamContextController {
             @PathVariable UUID nodeId,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        daydreamService.findAccessibleById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限访问"));
 
         List<DreamRelationship> relationships = dreamRelationshipService.getRelationshipsByDreamAndNode(daydreamId, nodeId);
         return Result.success(relationships.stream().map(DreamRelationshipResponse::from).toList());
@@ -157,8 +157,8 @@ public class DreamContextController {
             @PathVariable UUID daydreamId,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        daydreamService.findAccessibleById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限访问"));
 
         List<DreamRelationship> relationships = dreamRelationshipService.getRelationshipsByDream(daydreamId);
         return Result.success(relationships.stream().map(DreamRelationshipResponse::from).toList());
@@ -193,8 +193,8 @@ public class DreamContextController {
             @Valid @RequestBody DreamRelationshipRequest request,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        daydreamService.findModifiableById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限修改"));
 
         DreamRelationship update = DreamRelationship.builder()
                 .personName(request.getPersonName())
@@ -215,8 +215,8 @@ public class DreamContextController {
             @PathVariable UUID relationshipId,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(daydreamId, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        daydreamService.findModifiableById(daydreamId, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限修改"));
 
         dreamRelationshipService.deleteRelationship(userId, relationshipId);
         return Result.success();

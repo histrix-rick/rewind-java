@@ -1,5 +1,6 @@
 package com.rewindai.auth.service;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.rewindai.auth.config.IdCardCheckProperties;
 import com.rewindai.common.core.exception.BusinessException;
@@ -96,7 +97,7 @@ public class IdCardCheckService {
                 IdCardCheckApiResponse.Result result = apiResponse.getResult();
                 if (result != null) {
                     // data.result=0 表示一致（通过），1 表示不一致（失败）
-                    if (Integer.valueOf(0).equals(result.getResult()) || "0".equals(result.getResult())) {
+                    if (Integer.valueOf(0).equals(result.getResult())) {
                         // 实名认证通过
                         return IdCardCheckResult.pass();
                     } else {
@@ -161,6 +162,7 @@ public class IdCardCheckService {
      * API响应结构
      */
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private static class IdCardCheckApiResponse {
         @JsonProperty("code")
         private String code;
@@ -181,6 +183,7 @@ public class IdCardCheckService {
         private String desc;
 
         @Data
+        @JsonIgnoreProperties(ignoreUnknown = true)
         private static class Result {
             @JsonProperty("status")
             private String status;
@@ -210,7 +213,7 @@ public class IdCardCheckService {
             private Object res;
 
             @JsonProperty("result")
-            private Object result;
+            private Integer result;
         }
     }
 }

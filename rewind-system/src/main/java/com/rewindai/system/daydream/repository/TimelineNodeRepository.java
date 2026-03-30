@@ -33,4 +33,8 @@ public interface TimelineNodeRepository extends JpaRepository<TimelineNode, UUID
 
     // 用于获取最后一个节点（不区分分支）
     Optional<TimelineNode> findFirstByDreamIdOrderBySequenceNumDesc(UUID dreamId);
+
+    // 获取指定分支中序号大于指定值的所有节点（用于回滚删除）
+    List<TimelineNode> findByDreamIdAndBranchIdAndSequenceNumGreaterThanOrderBySequenceNumDesc(
+            UUID dreamId, UUID branchId, Integer sequenceNum);
 }

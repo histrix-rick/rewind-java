@@ -8,7 +8,8 @@ Rewind.ai 白日梦想家 - Java后端模块
 - 开启白日梦，设定起始时间点
 - 时间轴进度展示（从起始时间到当前时间）
 - 垂直时间轴节点记录
-- 时间轴回溯（分支功能）
+- 时间轴回溯（从任意节点创建新分支）
+- 多分支支持（切换不同的时间线分支）
 - AI现实判官（50%真实判定模拟）
 - 用户属性系统（财力、智力、体力、魅力、运气）
 - 活跃梦境限额（最多3个）
@@ -16,6 +17,11 @@ Rewind.ai 白日梦想家 - Java后端模块
 - 知识验证挑战（开启梦境前需通过知识问答）
 - 梦境列表（支持状态筛选：进行中/已完成/已删除）
 - 梦境结束/删除操作
+- 梦境点赞/取消点赞
+- 时间轴节点点赞/取消点赞
+- 梦境评论/回复/删除（软删除）
+- 通知消息系统（点赞通知、评论通知、评论回复通知）
+- 梦想档案库（归档/恢复/永久删除）
 
 ### 用户系统
 - 实名认证（身份证号验证）
@@ -75,6 +81,8 @@ Rewind.ai 白日梦想家 - Java后端模块
   - 知识验证挑战 API
   - 用户属性 API
   - 文件上传 API
+  - 梦境互动 API（点赞、评论）
+  - 通知消息 API
 
 ## 数据库初始化
 
@@ -86,7 +94,22 @@ psql -U postgres -d rewind_db -f schema.sql
 
 # 初始化预置数据
 psql -U postgres -d rewind_db -f init_data.sql
+
+# 如需添加like_count字段（如果schema.sql已更新可跳过）
+psql -U postgres -d rewind_db -f migration_add_like_count.sql
 ```
+
+### 数据库表说明
+- `user_attributes` - 用户属性表
+- `dream_worlds` - 白日梦世界表
+- `dream_branches` - 梦境分支表
+- `dream_timeline_nodes` - 时间轴节点表
+- `dream_contexts` - 梦境上下文表
+- `dream_relationships` - 梦境人物关系表
+- `dream_likes` - 梦境点赞表
+- `node_likes` - 节点点赞表
+- `dream_comments` - 梦境评论表
+- `notifications` - 通知消息表
 
 ## 项目结构
 
@@ -129,4 +152,4 @@ cd rewind-app && mvn spring-boot:run
 - App端: http://localhost:8082/swagger-ui.html
 
 ---
-**最后更新**: 2026-03-24
+**最后更新**: 2026-03-28

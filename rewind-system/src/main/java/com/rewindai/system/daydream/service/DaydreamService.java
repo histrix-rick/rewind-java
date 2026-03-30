@@ -57,6 +57,37 @@ public class DaydreamService {
     }
 
     /**
+     * 获取可访问的白日梦（公开梦境任何人可访问，私有梦境仅所有者可访问）
+     *
+     * @param id 白日梦ID
+     * @param userId 当前用户ID
+     * @return 可访问的白日梦
+     */
+    public Optional<Daydream> findAccessibleById(UUID id, UUID userId) {
+        Optional<Daydream> daydreamOpt = daydreamRepository.findById(id);
+        if (daydreamOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        Daydream daydream = daydreamOpt.get();
+        // 如果是公开梦境，或者是所有者，则可以访问
+        if (Boolean.TRUE.equals(daydream.getIsPublic()) || daydream.getUserId().equals(userId)) {
+            return daydreamOpt;
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * 检查用户是否可以修改该白日梦（仅所有者可修改）
+     *
+     * @param id 白日梦ID
+     * @param userId 当前用户ID
+     * @return 可修改的白日梦
+     */
+    public Optional<Daydream> findModifiableById(UUID id, UUID userId) {
+        return daydreamRepository.findByIdAndUserId(id, userId);
+    }
+
+    /**
      * 创建白日梦
      */
     @Transactional
@@ -223,7 +254,7 @@ public class DaydreamService {
     }
 
     /**
-     * 归档/删除白日梦
+     * 归档白日梦（软删除）
      */
     @Transactional
     public void archive(UUID id, UUID userId) {
@@ -232,9 +263,61 @@ public class DaydreamService {
 
         daydream.setIsActive(false);
         daydream.setStatus(DreamStatus.ARCHIVED);
+        daydream.setDeletedAt(java.time.OffsetDateTime.now());
 
         daydreamRepository.save(daydream);
         log.info("白日梦已归档: userId={}, daydreamId={}", userId, id);
+    }
+
+    /**
+     * 恢复已归档的白日梦
+     */
+    @Transactional
+    public Daydream restore(UUID id, UUID userId) {
+        Daydream daydream = daydreamRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.DREAM_NOT_FOUND));
+
+        // 验证权限
+        if (!daydream.getUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "无权操作此梦境");
+        }
+
+        daydream.setIsActive(true);
+        daydream.setStatus(DreamStatus.ACTIVE);
+        daydream.setDeletedAt(null);
+
+        Daydream saved = daydreamRepository.save(daydream);
+        log.info("白日梦已恢复: userId={}, daydreamId={}", userId, id);
+        return saved;
+    }
+
+    /**
+     * 永久删除白日梦（不可恢复）
+     */
+    @Transactional
+    public void permanentDelete(UUID id, UUID userId) {
+        Daydream daydream = daydreamRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.DREAM_NOT_FOUND));
+
+        // 验证权限
+        if (!daydream.getUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "无权操作此梦境");
+        }
+
+        // 验证必须是已归档状态
+        if (daydream.getDeletedAt() == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "只能永久删除已归档的梦境");
+        }
+
+        daydreamRepository.delete(daydream);
+        log.info("白日梦已永久删除: userId={}, daydreamId={}", userId, id);
+    }
+
+    /**
+     * 获取用户的归档梦境列表
+     */
+    public Page<Daydream> getArchivedDaydreams(UUID userId, Pageable pageable) {
+        return daydreamRepository.findArchivedByUserId(userId, pageable);
     }
 
     public List<Daydream> getActiveDaydreams(UUID userId) {

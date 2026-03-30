@@ -83,19 +83,19 @@ public class Daydream {
     @Convert(converter = DreamPrivacyConverter.class)
     private DreamPrivacy privacy;
 
-    @Column(name = "view_count", nullable = false)
+    @Column(name = "view_count")
     @Builder.Default
     private Integer viewCount = 0;
 
-    @Column(name = "like_count", nullable = false)
+    @Column(name = "like_count")
     @Builder.Default
     private Integer likeCount = 0;
 
-    @Column(name = "share_count", nullable = false)
+    @Column(name = "share_count")
     @Builder.Default
     private Integer shareCount = 0;
 
-    @Column(name = "comment_count", nullable = false)
+    @Column(name = "comment_count")
     @Builder.Default
     private Integer commentCount = 0;
 

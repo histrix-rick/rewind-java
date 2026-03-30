@@ -39,8 +39,8 @@ public class DreamRelationshipController {
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
         // 验证用户有权限访问这个梦境
-        daydreamService.findByIdAndUserId(dreamId, userId)
-                .orElseThrow(() -> new RuntimeException("梦境不存在"));
+        daydreamService.findAccessibleById(dreamId, userId)
+                .orElseThrow(() -> new RuntimeException("梦境不存在或无权限访问"));
         List<DreamRelationship> relationships = dreamRelationshipService.getRelationshipsByDream(dreamId);
         return Result.success(relationships.stream()
                 .map(DreamRelationshipResponse::from)
@@ -55,8 +55,8 @@ public class DreamRelationshipController {
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
         // 验证用户有权限访问这个梦境
-        daydreamService.findByIdAndUserId(dreamId, userId)
-                .orElseThrow(() -> new RuntimeException("梦境不存在"));
+        daydreamService.findAccessibleById(dreamId, userId)
+                .orElseThrow(() -> new RuntimeException("梦境不存在或无权限访问"));
         List<DreamRelationship> relationships = dreamRelationshipService.getRelationshipsByDreamAndNode(dreamId, nodeId);
         return Result.success(relationships.stream()
                 .map(DreamRelationshipResponse::from)

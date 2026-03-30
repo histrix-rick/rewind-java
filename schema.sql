@@ -86,6 +86,9 @@ CREATE TABLE IF NOT EXISTS dream_timeline_nodes (
     attribute_snapshot TEXT,
     node_type VARCHAR(20) NOT NULL DEFAULT 'NORMAL',
     is_public BOOLEAN NOT NULL DEFAULT false,
+    judgment_status VARCHAR(20) DEFAULT 'PENDING',
+    judgment_started_at TIMESTAMP WITH TIME ZONE,
+    like_count INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
@@ -277,6 +280,106 @@ INSERT INTO education_levels (name, level, question_count, passing_score, sort_o
 ('本科', 5, 3, 100, 5),
 ('硕士', 6, 3, 100, 6),
 ('博士', 7, 3, 100, 7);
+
+-- =============================================
+-- 梦境点赞表
+-- =============================================
+CREATE TABLE IF NOT EXISTS dream_likes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    dream_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    UNIQUE(dream_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_dl_dream_id ON dream_likes(dream_id);
+CREATE INDEX IF NOT EXISTS idx_dl_user_id ON dream_likes(user_id);
+
+-- =============================================
+-- 时间轴节点点赞表
+-- =============================================
+CREATE TABLE IF NOT EXISTS node_likes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    node_id UUID NOT NULL,
+    dream_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    UNIQUE(node_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_nl_node_id ON node_likes(node_id);
+CREATE INDEX IF NOT EXISTS idx_nl_dream_id ON node_likes(dream_id);
+CREATE INDEX IF NOT EXISTS idx_nl_user_id ON node_likes(user_id);
+
+-- =============================================
+-- 梦境评论表
+-- =============================================
+CREATE TABLE IF NOT EXISTS dream_comments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    dream_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    parent_comment_id UUID,
+    content TEXT NOT NULL,
+    like_count INTEGER NOT NULL DEFAULT 0,
+    is_deleted BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_dc_dream_id ON dream_comments(dream_id);
+CREATE INDEX IF NOT EXISTS idx_dc_user_id ON dream_comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_dc_parent_id ON dream_comments(parent_comment_id);
+CREATE INDEX IF NOT EXISTS idx_dc_created_at ON dream_comments(dream_id, created_at DESC);
+
+-- =============================================
+-- 通知消息表
+-- =============================================
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    type VARCHAR(32) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    related_id UUID,
+    related_type VARCHAR(50),
+    is_read BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notif_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notif_read ON notifications(user_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_notif_created ON notifications(user_id, created_at DESC);
+
+-- =============================================
+-- 用户关注关系表
+-- =============================================
+CREATE TABLE IF NOT EXISTS user_follows (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    follower_id UUID NOT NULL,
+    following_id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    UNIQUE(follower_id, following_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_follow_follower ON user_follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_follow_following ON user_follows(following_id);
+
+-- =============================================
+-- 梦境打赏记录表
+-- =============================================
+CREATE TABLE IF NOT EXISTS dream_rewards (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    dream_id UUID NOT NULL,
+    sender_id UUID NOT NULL,
+    receiver_id UUID NOT NULL,
+    amount NUMERIC(19,2) NOT NULL,
+    message VARCHAR(200),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_reward_dream ON dream_rewards(dream_id);
+CREATE INDEX IF NOT EXISTS idx_reward_sender ON dream_rewards(sender_id);
+CREATE INDEX IF NOT EXISTS idx_reward_receiver ON dream_rewards(receiver_id);
 
 -- =============================================
 -- 初始化完成

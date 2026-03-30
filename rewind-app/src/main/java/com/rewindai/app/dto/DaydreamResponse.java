@@ -45,6 +45,7 @@ public class DaydreamResponse {
     private BigDecimal progress;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    private OffsetDateTime deletedAt;
 
     public static DaydreamResponse from(Daydream daydream, BigDecimal progress) {
         return DaydreamResponse.builder()
@@ -69,6 +70,7 @@ public class DaydreamResponse {
                 .progress(progress)
                 .createdAt(daydream.getCreatedAt())
                 .updatedAt(daydream.getUpdatedAt())
+                .deletedAt(daydream.getDeletedAt())
                 .build();
     }
 }

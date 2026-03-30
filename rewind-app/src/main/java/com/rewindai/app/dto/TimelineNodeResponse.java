@@ -38,6 +38,7 @@ public class TimelineNodeResponse {
     private Map<String, Object> attributeSnapshot;
     private NodeType nodeType;
     private Boolean isPublic;
+    private Integer likeCount;
     private OffsetDateTime createdAt;
 
     public static TimelineNodeResponse from(TimelineNode node) {
@@ -56,6 +57,7 @@ public class TimelineNodeResponse {
                 .attributeSnapshot(node.getAttributeSnapshot())
                 .nodeType(node.getNodeType())
                 .isPublic(node.getIsPublic())
+                .likeCount(node.getLikeCount())
                 .createdAt(node.getCreatedAt())
                 .build();
     }

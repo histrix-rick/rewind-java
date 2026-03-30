@@ -29,6 +29,12 @@ public interface DaydreamRepository extends JpaRepository<Daydream, UUID> {
 
     Page<Daydream> findByUserId(UUID userId, Pageable pageable);
 
+    /**
+     * 查询已归档的梦境（deletedAt不为空）
+     */
+    @Query("SELECT d FROM Daydream d WHERE d.userId = :userId AND d.deletedAt IS NOT NULL ORDER BY d.deletedAt DESC")
+    Page<Daydream> findArchivedByUserId(@Param("userId") UUID userId, Pageable pageable);
+
     List<Daydream> findByUserIdAndIsActiveTrueAndIsFinishedFalse(UUID userId);
 
     @Query("SELECT COUNT(d) FROM Daydream d WHERE d.userId = :userId AND d.isActive = true AND d.isFinished = false")

@@ -38,8 +38,8 @@ public class DreamAssetController {
             @PathVariable UUID dreamId,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(dreamId, userId)
-                .orElseThrow(() -> new RuntimeException("梦境不存在"));
+        daydreamService.findAccessibleById(dreamId, userId)
+                .orElseThrow(() -> new RuntimeException("梦境不存在或无权限访问"));
         List<DreamAsset> assets = dreamAssetService.getActiveAssetsByDream(dreamId);
         return Result.success(assets.stream()
                 .map(DreamAssetResponse::from)
@@ -52,8 +52,8 @@ public class DreamAssetController {
             @PathVariable UUID dreamId,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(dreamId, userId)
-                .orElseThrow(() -> new RuntimeException("梦境不存在"));
+        daydreamService.findAccessibleById(dreamId, userId)
+                .orElseThrow(() -> new RuntimeException("梦境不存在或无权限访问"));
         List<DreamAsset> assets = dreamAssetService.getAllAssetsByDream(dreamId);
         return Result.success(assets.stream()
                 .map(DreamAssetResponse::from)
@@ -67,8 +67,8 @@ public class DreamAssetController {
             @PathVariable UUID nodeId,
             Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(dreamId, userId)
-                .orElseThrow(() -> new RuntimeException("梦境不存在"));
+        daydreamService.findAccessibleById(dreamId, userId)
+                .orElseThrow(() -> new RuntimeException("梦境不存在或无权限访问"));
         List<DreamAsset> assets = dreamAssetService.getAssetsByDreamAndNode(dreamId, nodeId);
         return Result.success(assets.stream()
                 .map(DreamAssetResponse::from)
@@ -83,8 +83,8 @@ public class DreamAssetController {
         UUID userId = UUID.fromString(authentication.getName());
         return dreamAssetService.findById(id)
                 .map(asset -> {
-                    daydreamService.findByIdAndUserId(asset.getDreamId(), userId)
-                            .orElseThrow(() -> new RuntimeException("梦境不存在"));
+                    daydreamService.findAccessibleById(asset.getDreamId(), userId)
+                            .orElseThrow(() -> new RuntimeException("梦境不存在或无权限访问"));
                     return Result.success(DreamAssetResponse.from(asset));
                 })
                 .orElse(Result.notFound("资产不存在"));

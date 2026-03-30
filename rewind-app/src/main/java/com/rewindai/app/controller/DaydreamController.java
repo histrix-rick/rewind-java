@@ -164,9 +164,9 @@ public class DaydreamController {
                                               Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
 
-        Optional<Daydream> daydreamOpt = daydreamService.findByIdAndUserId(id, userId);
+        Optional<Daydream> daydreamOpt = daydreamService.findAccessibleById(id, userId);
         if (daydreamOpt.isEmpty()) {
-            return Result.notFound("白日梦不存在");
+            return Result.notFound("白日梦不存在或无权限访问");
         }
 
         Daydream daydream = daydreamOpt.get();
@@ -181,9 +181,9 @@ public class DaydreamController {
                                                           Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
 
-        Optional<Daydream> daydreamOpt = daydreamService.findByIdAndUserId(id, userId);
+        Optional<Daydream> daydreamOpt = daydreamService.findAccessibleById(id, userId);
         if (daydreamOpt.isEmpty()) {
-            return Result.notFound("白日梦不存在");
+            return Result.notFound("白日梦不存在或无权限访问");
         }
 
         Daydream daydream = daydreamOpt.get();
@@ -192,9 +192,11 @@ public class DaydreamController {
 
         DaydreamDetailResponse response = DaydreamDetailResponse.from(daydream, progress);
 
-        // 添加用户全局属性
-        UserAttribute userAttribute = attributeService.getOrCreateAttribute(userId);
-        response.setUserAttribute(UserAttributeResponse.from(userAttribute));
+        // 只有所有者才能看到自己的全局属性
+        if (daydream.getUserId().equals(userId)) {
+            UserAttribute userAttribute = attributeService.getOrCreateAttribute(userId);
+            response.setUserAttribute(UserAttributeResponse.from(userAttribute));
+        }
 
         // 获取梦境初始上下文（最早的节点）
         List<DreamContext> contexts = dreamContextService.getContextsByDreamId(id);
@@ -263,6 +265,35 @@ public class DaydreamController {
         UUID userId = UUID.fromString(authentication.getName());
         daydreamService.archive(id, userId);
         return Result.success();
+    }
+
+    @Operation(summary = "恢复已归档的白日梦")
+    @PostMapping("/{id}/restore")
+    public Result<DaydreamResponse> restore(@PathVariable UUID id,
+                                             Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        Daydream daydream = daydreamService.restore(id, userId);
+        BigDecimal progress = daydreamService.calculateProgress(daydream);
+        return Result.success(DaydreamResponse.from(daydream, progress));
+    }
+
+    @Operation(summary = "永久删除已归档的白日梦")
+    @DeleteMapping("/{id}/permanent")
+    public Result<Void> permanentDelete(@PathVariable UUID id,
+                                         Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        daydreamService.permanentDelete(id, userId);
+        return Result.success();
+    }
+
+    @Operation(summary = "获取我的归档梦境列表")
+    @GetMapping("/my/archived")
+    public Result<Page<DaydreamResponse>> getMyArchivedDaydreams(
+            @PageableDefault(size = 20, sort = "deletedAt") Pageable pageable,
+            Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        Page<Daydream> daydreams = daydreamService.getArchivedDaydreams(userId, pageable);
+        return Result.success(daydreams.map(d -> DaydreamResponse.from(d, daydreamService.calculateProgress(d))));
     }
 
     @Operation(summary = "公开分享白日梦")
@@ -363,8 +394,8 @@ public class DaydreamController {
     public Result<List<DreamBranch>> getBranches(@PathVariable UUID id,
                                                    Authentication authentication) {
         UUID userId = UUID.fromString(authentication.getName());
-        daydreamService.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new RuntimeException("白日梦不存在"));
+        daydreamService.findAccessibleById(id, userId)
+                .orElseThrow(() -> new RuntimeException("白日梦不存在或无权限访问"));
         return Result.success(daydreamService.getBranches(id));
     }
 
