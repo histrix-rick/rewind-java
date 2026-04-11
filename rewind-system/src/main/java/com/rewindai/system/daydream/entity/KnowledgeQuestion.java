@@ -1,6 +1,6 @@
 package com.rewindai.system.daydream.entity;
 
-import com.rewindai.system.dream.enums.QuestionSubject;
+import com.rewindai.system.daydream.enums.QuestionSubject;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

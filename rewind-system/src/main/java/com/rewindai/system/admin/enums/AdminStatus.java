@@ -30,4 +30,12 @@ public enum AdminStatus {
         }
         return NORMAL;
     }
+
+    public static AdminStatus fromCode(String code) {
+        try {
+            return fromCode(Integer.parseInt(code));
+        } catch (NumberFormatException e) {
+            return NORMAL;
+        }
+    }
 }

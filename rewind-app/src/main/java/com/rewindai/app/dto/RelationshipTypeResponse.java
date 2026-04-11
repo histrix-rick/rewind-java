@@ -1,7 +1,7 @@
 package com.rewindai.app.dto;
 
 import com.rewindai.system.daydream.entity.RelationshipType;
-import com.rewindai.system.dream.enums.RelationshipCategory;
+import com.rewindai.system.daydream.enums.RelationshipCategory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -1,7 +1,7 @@
 package com.rewindai.app.dto;
 
 import com.rewindai.system.daydream.entity.KnowledgeQuestion;
-import com.rewindai.system.dream.enums.QuestionSubject;
+import com.rewindai.system.daydream.enums.QuestionSubject;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

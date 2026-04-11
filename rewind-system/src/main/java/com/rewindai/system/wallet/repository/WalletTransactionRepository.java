@@ -4,6 +4,7 @@ import com.rewindai.system.wallet.entity.WalletTransaction;
 import com.rewindai.system.wallet.enums.TransactionType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -34,6 +35,12 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
      */
     @Override
     Page<WalletTransaction> findAll(Pageable pageable);
+
+    /**
+     * 后台管理：查询所有交易记录（用于统计）
+     */
+    @Override
+    List<WalletTransaction> findAll(Sort sort);
 
     /**
      * 后台管理：按类型查询交易记录

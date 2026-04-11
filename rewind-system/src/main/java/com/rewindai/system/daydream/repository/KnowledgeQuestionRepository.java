@@ -1,7 +1,7 @@
 package com.rewindai.system.daydream.repository;
 
 import com.rewindai.system.daydream.entity.KnowledgeQuestion;
-import com.rewindai.system.dream.enums.QuestionSubject;
+import com.rewindai.system.daydream.enums.QuestionSubject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

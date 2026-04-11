@@ -2,9 +2,17 @@
 
 Rewind.ai 白日梦想家 - Java后端模块
 
+## 重要说明
+
+**关于 Dream vs Daydream 系统**:
+- **Daydream (白日梦系统)**: 这是当前正在使用的系统，对应数据库表 `dream_worlds`
+- **Dream (简单梦境系统)**: 早期版本的简单梦境系统，已废弃，相关代码已删除
+
+所有新功能和后台管理均使用 **Daydream 系统**。
+
 ## 核心功能
 
-### 白日梦系统
+### 白日梦系统 (Daydream)
 - 开启白日梦，设定起始时间点
 - 时间轴进度展示（从起始时间到当前时间）
 - 垂直时间轴节点记录
@@ -22,6 +30,18 @@ Rewind.ai 白日梦想家 - Java后端模块
 - 梦境评论/回复/删除（软删除）
 - 通知消息系统（点赞通知、评论通知、评论回复通知）
 - 梦想档案库（归档/恢复/永久删除）
+- 梦境打赏功能
+- 用户关注/粉丝系统
+- 梦境关注系统
+
+### 后台管理系统
+- 用户管理（状态管理、数据导出）
+- 梦境管理（状态管理、审核、精选、置顶、数据导出）
+- 评论管理（查看、删除、恢复、数据导出）
+- 内容举报管理（举报处理、操作记录）
+- 工单与客服（工单管理、用户反馈、知识库）
+- 数据统计（各模块数据统计）
+- 数据导出（CSV格式导出用户、梦境、评论数据）
 
 ### 用户系统
 - 实名认证（身份证号验证）
@@ -65,12 +85,18 @@ Rewind.ai 白日梦想家 - Java后端模块
   - AI判官 Service
   - 文件存储实体、Service、Repository
   - 存储配置实体、Service、Repository
+  - 内容举报实体、Service、Repository
+  - 工单与客服实体、Service、Repository
 - rewind-auth (认证服务 - 端口 8080)
   - 用户注册/登录
   - 实名认证
 - rewind-admin (后台管理API - 端口 8081)
-  - 用户管理
-  - 梦境管理
+  - 用户管理（状态管理、数据导出）
+  - 梦境管理（审核、精选、置顶、数据导出）
+  - 评论管理（查看、删除、恢复、数据导出）
+  - 内容举报管理（举报处理、操作记录）
+  - 工单与客服管理（工单管理、用户反馈、知识库）
+  - 数据统计（各模块数据统计）
   - 存储配置管理
   - 文件管理
 - rewind-app (App端API - 端口 8082)
@@ -100,16 +126,28 @@ psql -U postgres -d rewind_db -f migration_add_like_count.sql
 ```
 
 ### 数据库表说明
+- `users` - 用户表
 - `user_attributes` - 用户属性表
-- `dream_worlds` - 白日梦世界表
+- `user_follows` - 用户关注表
+- `dream_worlds` - 白日梦世界表（核心表）
 - `dream_branches` - 梦境分支表
 - `dream_timeline_nodes` - 时间轴节点表
 - `dream_contexts` - 梦境上下文表
 - `dream_relationships` - 梦境人物关系表
 - `dream_likes` - 梦境点赞表
-- `node_likes` - 节点点赞表
+- `dream_follows` - 梦境关注表
 - `dream_comments` - 梦境评论表
+- `dream_rewards` - 梦境打赏表
+- `node_likes` - 节点点赞表
 - `notifications` - 通知消息表
+- `user_identities` - 用户身份预设表
+- `education_levels` - 学历水平表
+- `relationship_types` - 社会关系类型表
+- `knowledge_questions` - 知识题库表
+- `user_wallets` - 用户钱包表
+- `cash_transactions` - 现金交易表
+- `storage_configs` - 存储配置表
+- `files` - 文件表
 
 ## 项目结构
 
@@ -152,4 +190,4 @@ cd rewind-app && mvn spring-boot:run
 - App端: http://localhost:8082/swagger-ui.html
 
 ---
-**最后更新**: 2026-03-28
+**最后更新**: 2026-04-11

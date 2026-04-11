@@ -1,7 +1,7 @@
 package com.rewindai.app.dto;
 
-import com.rewindai.system.dream.enums.DreamPrivacy;
-import com.rewindai.system.dream.enums.DreamStatus;
+import com.rewindai.system.daydream.enums.DreamPrivacy;
+import com.rewindai.system.daydream.enums.DreamStatus;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 

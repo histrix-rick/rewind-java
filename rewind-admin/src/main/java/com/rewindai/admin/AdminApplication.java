@@ -15,8 +15,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "com.rewindai.system",
         "com.rewindai.common"
 })
-@EnableJpaRepositories(basePackages = "com.rewindai.system")
-@EntityScan(basePackages = "com.rewindai.system")
+@EnableJpaRepositories(basePackages = {"com.rewindai.system"})
+@EntityScan(basePackages = {"com.rewindai.system"})
 public class AdminApplication {
 
     public static void main(String[] args) {

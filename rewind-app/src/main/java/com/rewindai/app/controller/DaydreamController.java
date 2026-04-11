@@ -3,8 +3,9 @@ package com.rewindai.app.controller;
 import com.rewindai.app.dto.*;
 import com.rewindai.common.core.result.Result;
 import com.rewindai.system.daydream.entity.*;
+import com.rewindai.system.daydream.enums.DreamPrivacy;
+import com.rewindai.system.daydream.enums.DreamStatus;
 import com.rewindai.system.daydream.service.*;
-import com.rewindai.system.dream.enums.DreamStatus;
 import com.rewindai.system.user.entity.User;
 import com.rewindai.system.user.entity.UserAttribute;
 import com.rewindai.system.user.service.AttributeService;
@@ -92,8 +93,8 @@ public class DaydreamController {
 
         if (request.getPrivacy() != null) {
             daydream.setPrivacy(request.getPrivacy() == 1 ?
-                    com.rewindai.system.dream.enums.DreamPrivacy.PUBLIC :
-                    com.rewindai.system.dream.enums.DreamPrivacy.PRIVATE);
+                    DreamPrivacy.PUBLIC :
+                    DreamPrivacy.PRIVATE);
         }
 
         // 构建DreamContext
@@ -134,6 +135,12 @@ public class DaydreamController {
         userWalletService.addCoins(userId, new BigDecimal("10"),
                 "创建白日梦奖励", TransactionType.REWARD, saved.getId(), "DAYDREAM");
 
+        // 如果创建时就是公开状态，额外奖励 20 梦想币
+        if (Boolean.TRUE.equals(saved.getIsPublic())) {
+            userWalletService.addCoins(userId, new BigDecimal("20"),
+                    "公开分享白日梦奖励", TransactionType.SHARE, saved.getId(), "DAYDREAM_PUBLISH");
+        }
+
         BigDecimal progress = daydreamService.calculateProgress(saved);
         return Result.success(DaydreamResponse.from(saved, progress));
     }
@@ -172,7 +179,11 @@ public class DaydreamController {
         Daydream daydream = daydreamOpt.get();
         daydreamService.incrementViewCount(id);
         BigDecimal progress = daydreamService.calculateProgress(daydream);
-        return Result.success(DaydreamResponse.from(daydream, progress));
+
+        // 获取作者信息
+        User author = userService.findById(daydream.getUserId()).orElse(null);
+
+        return Result.success(DaydreamResponse.from(daydream, progress, author));
     }
 
     @Operation(summary = "获取白日梦完整详情（包含上下文和关系）")
@@ -245,7 +256,11 @@ public class DaydreamController {
         Daydream daydream = daydreamOpt.get();
         daydreamService.incrementViewCount(id);
         BigDecimal progress = daydreamService.calculateProgress(daydream);
-        return Result.success(DaydreamResponse.from(daydream, progress));
+
+        // 获取作者信息
+        User author = userService.findById(daydream.getUserId()).orElse(null);
+
+        return Result.success(DaydreamResponse.from(daydream, progress, author));
     }
 
     @Operation(summary = "结束白日梦")
@@ -377,7 +392,19 @@ public class DaydreamController {
     public Result<Page<DaydreamResponse>> getPublicDaydreams(
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         Page<Daydream> daydreams = daydreamService.getPublicDaydreams(pageable);
-        return Result.success(daydreams.map(d -> DaydreamResponse.from(d, daydreamService.calculateProgress(d))));
+
+        // 批量获取作者信息
+        var userIds = daydreams.getContent().stream()
+                .map(Daydream::getUserId)
+                .collect(Collectors.toSet());
+        var userMap = userService.findAllByIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        return Result.success(daydreams.map(d -> {
+            BigDecimal progress = daydreamService.calculateProgress(d);
+            User author = userMap.get(d.getUserId());
+            return DaydreamResponse.from(d, progress, author);
+        }));
     }
 
     @Operation(summary = "搜索公开白日梦")
@@ -386,7 +413,19 @@ public class DaydreamController {
             @RequestParam String keyword,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
         Page<Daydream> daydreams = daydreamService.searchPublicDaydreams(keyword, pageable);
-        return Result.success(daydreams.map(d -> DaydreamResponse.from(d, daydreamService.calculateProgress(d))));
+
+        // 批量获取作者信息
+        var userIds = daydreams.getContent().stream()
+                .map(Daydream::getUserId)
+                .collect(Collectors.toSet());
+        var userMap = userService.findAllByIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        return Result.success(daydreams.map(d -> {
+            BigDecimal progress = daydreamService.calculateProgress(d);
+            User author = userMap.get(d.getUserId());
+            return DaydreamResponse.from(d, progress, author);
+        }));
     }
 
     @Operation(summary = "获取白日梦分支列表")

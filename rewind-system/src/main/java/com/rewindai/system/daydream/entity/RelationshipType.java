@@ -1,6 +1,6 @@
 package com.rewindai.system.daydream.entity;
 
-import com.rewindai.system.dream.enums.RelationshipCategory;
+import com.rewindai.system.daydream.enums.RelationshipCategory;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

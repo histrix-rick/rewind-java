@@ -74,4 +74,8 @@ public class Result<T> implements Serializable {
     public static <T> Result<T> notFound(String message) {
         return new Result<>(404, message, null, null);
     }
+
+    public boolean isSuccess() {
+        return this.code == 200;
+    }
 }

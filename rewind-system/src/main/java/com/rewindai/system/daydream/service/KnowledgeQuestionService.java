@@ -2,7 +2,7 @@ package com.rewindai.system.daydream.service;
 
 import com.rewindai.system.daydream.entity.KnowledgeQuestion;
 import com.rewindai.system.daydream.repository.KnowledgeQuestionRepository;
-import com.rewindai.system.dream.enums.QuestionSubject;
+import com.rewindai.system.daydream.enums.QuestionSubject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;

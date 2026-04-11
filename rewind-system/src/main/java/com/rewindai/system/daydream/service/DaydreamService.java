@@ -13,8 +13,8 @@ import com.rewindai.system.daydream.repository.DreamBranchRepository;
 import com.rewindai.system.daydream.repository.DreamContextRepository;
 import com.rewindai.system.daydream.repository.DreamRelationshipRepository;
 import com.rewindai.system.daydream.repository.TimelineNodeRepository;
-import com.rewindai.system.dream.enums.DreamPrivacy;
-import com.rewindai.system.dream.enums.DreamStatus;
+import com.rewindai.system.daydream.enums.DreamPrivacy;
+import com.rewindai.system.daydream.enums.DreamStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -47,6 +47,7 @@ public class DaydreamService {
     private final TimelineNodeRepository timelineNodeRepository;
     private final DreamContextRepository dreamContextRepository;
     private final DreamRelationshipRepository dreamRelationshipRepository;
+    private final DreamFollowService dreamFollowService;
 
     public Optional<Daydream> findById(UUID id) {
         return daydreamRepository.findById(id);
@@ -109,9 +110,18 @@ public class DaydreamService {
         daydream.setUserId(userId);
         daydream.setIsActive(true);
         daydream.setIsFinished(false);
-        daydream.setIsPublic(false);
         daydream.setStatus(DreamStatus.ACTIVE);
-        daydream.setPrivacy(DreamPrivacy.PRIVATE);
+        // 只有在用户没有设置隐私状态时才设置默认值
+        if (daydream.getPrivacy() == null) {
+            daydream.setPrivacy(DreamPrivacy.PRIVATE);
+            daydream.setIsPublic(false);
+        } else {
+            daydream.setIsPublic(daydream.getPrivacy() == DreamPrivacy.PUBLIC);
+        }
+        // 确保isPublic和privacy保持一致
+        if (daydream.getIsPublic() == null) {
+            daydream.setIsPublic(daydream.getPrivacy() == DreamPrivacy.PUBLIC);
+        }
         daydream.setViewCount(0);
         daydream.setLikeCount(0);
         daydream.setShareCount(0);
@@ -309,6 +319,9 @@ public class DaydreamService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "只能永久删除已归档的梦境");
         }
 
+        // 解除该梦境的所有关注
+        dreamFollowService.unfollowAllForDream(id);
+
         daydreamRepository.delete(daydream);
         log.info("白日梦已永久删除: userId={}, daydreamId={}", userId, id);
     }
@@ -338,6 +351,13 @@ public class DaydreamService {
 
     public Page<Daydream> searchPublicDaydreams(String keyword, Pageable pageable) {
         return daydreamRepository.searchPublicDaydreams(keyword, DreamStatus.ACTIVE, pageable);
+    }
+
+    /**
+     * 获取指定用户的公开梦境列表
+     */
+    public Page<Daydream> getPublicDaydreamsByUserId(UUID userId, Pageable pageable) {
+        return daydreamRepository.findPublicByUserId(userId, pageable);
     }
 
     @Transactional

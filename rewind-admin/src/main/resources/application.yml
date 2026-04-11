@@ -27,6 +27,13 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: false
+    encoding: UTF-8
 
 jwt:
   secret: ${JWT_SECRET:Rewind.ai_Secret_Key_2024_JWT_Token_Very_Long_Secret_For_HS256}

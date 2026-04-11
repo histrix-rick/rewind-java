@@ -1,7 +1,7 @@
 package com.rewindai.system.daydream.repository;
 
 import com.rewindai.system.daydream.entity.RelationshipType;
-import com.rewindai.system.dream.enums.RelationshipCategory;
+import com.rewindai.system.daydream.enums.RelationshipCategory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

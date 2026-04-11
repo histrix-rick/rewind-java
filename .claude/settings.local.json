@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn compile:*)",
+      "Bash(mvn test:*)",
+      "Bash(npm install:*)",
+      "Bash(mvn spring-boot:run)",
+      "Bash(./mvnw.cmd clean:*)",
+      "Bash(mvn clean:*)",
+      "Bash(xargs grep:*)",
+      "Bash(cd:*)"
+    ]
+  }
+}

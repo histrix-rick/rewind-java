@@ -38,6 +38,7 @@
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <springdoc.version>2.3.0</springdoc.version>
         <mybatis-plus.version>3.5.5</mybatis-plus.version>
+        <flyway.version>10.10.0</flyway.version>
     </properties>
 
     <dependencyManagement>
@@ -95,6 +96,18 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc.version}</version>
+            </dependency>
+
+            <!-- Flyway -->
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-database-postgresql</artifactId>
+                <version>${flyway.version}</version>
             </dependency>
 
             <!-- MyBatis Plus -->

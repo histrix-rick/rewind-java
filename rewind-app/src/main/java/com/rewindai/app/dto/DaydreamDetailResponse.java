@@ -1,8 +1,8 @@
 package com.rewindai.app.dto;
 
 import com.rewindai.system.daydream.entity.Daydream;
-import com.rewindai.system.dream.enums.DreamPrivacy;
-import com.rewindai.system.dream.enums.DreamStatus;
+import com.rewindai.system.daydream.enums.DreamPrivacy;
+import com.rewindai.system.daydream.enums.DreamStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

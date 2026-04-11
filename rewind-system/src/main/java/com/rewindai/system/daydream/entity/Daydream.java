@@ -1,7 +1,8 @@
 package com.rewindai.system.daydream.entity;
 
-import com.rewindai.system.dream.enums.DreamPrivacy;
-import com.rewindai.system.dream.enums.DreamStatus;
+import com.rewindai.system.daydream.enums.DreamPrivacy;
+import com.rewindai.system.daydream.enums.DreamStatus;
+import com.rewindai.system.daydream.enums.ReviewStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,7 +29,10 @@ import java.util.UUID;
 @Table(name = "dream_worlds", indexes = {
         @Index(name = "idx_dw_user_id", columnList = "user_id"),
         @Index(name = "idx_dw_active", columnList = "user_id, is_active"),
-        @Index(name = "idx_dw_created_at", columnList = "created_at")
+        @Index(name = "idx_dw_created_at", columnList = "created_at"),
+        @Index(name = "idx_dw_review_status", columnList = "review_status"),
+        @Index(name = "idx_dw_featured", columnList = "is_featured"),
+        @Index(name = "idx_dw_pinned", columnList = "is_pinned")
 })
 public class Daydream {
 
@@ -114,6 +118,34 @@ public class Daydream {
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
 
+    @Column(name = "review_status")
+    @Convert(converter = ReviewStatusConverter.class)
+    @Builder.Default
+    private ReviewStatus reviewStatus = ReviewStatus.APPROVED;
+
+    @Column(name = "is_featured")
+    @Builder.Default
+    private Boolean isFeatured = false;
+
+    @Column(name = "is_pinned")
+    @Builder.Default
+    private Boolean isPinned = false;
+
+    @Column(name = "pinned_at")
+    private OffsetDateTime pinnedAt;
+
+    @Column(name = "featured_at")
+    private OffsetDateTime featuredAt;
+
+    @Column(name = "reviewed_at")
+    private OffsetDateTime reviewedAt;
+
+    @Column(name = "reviewed_by")
+    private UUID reviewedBy;
+
+    @Column(name = "review_reason", length = 500)
+    private String reviewReason;
+
     @PrePersist
     public void prePersist() {
         if (this.status == null) {
@@ -150,6 +182,19 @@ public class Daydream {
         @Override
         public DreamPrivacy convertToEntityAttribute(Integer code) {
             return code != null ? DreamPrivacy.fromCode(code) : DreamPrivacy.PRIVATE;
+        }
+    }
+
+    @Converter
+    public static class ReviewStatusConverter implements AttributeConverter<ReviewStatus, Integer> {
+        @Override
+        public Integer convertToDatabaseColumn(ReviewStatus status) {
+            return status != null ? status.getCode() : ReviewStatus.APPROVED.getCode();
+        }
+
+        @Override
+        public ReviewStatus convertToEntityAttribute(Integer code) {
+            return code != null ? ReviewStatus.fromCode(code) : ReviewStatus.APPROVED;
         }
     }
 }

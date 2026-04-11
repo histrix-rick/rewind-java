@@ -2,7 +2,7 @@ package com.rewindai.system.daydream.service;
 
 import com.rewindai.system.daydream.entity.RelationshipType;
 import com.rewindai.system.daydream.repository.RelationshipTypeRepository;
-import com.rewindai.system.dream.enums.RelationshipCategory;
+import com.rewindai.system.daydream.enums.RelationshipCategory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

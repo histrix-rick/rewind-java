@@ -1,8 +1,9 @@
 package com.rewindai.app.dto;
 
 import com.rewindai.system.daydream.entity.Daydream;
-import com.rewindai.system.dream.enums.DreamPrivacy;
-import com.rewindai.system.dream.enums.DreamStatus;
+import com.rewindai.system.daydream.enums.DreamPrivacy;
+import com.rewindai.system.daydream.enums.DreamStatus;
+import com.rewindai.system.user.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -46,6 +47,7 @@ public class DaydreamResponse {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private OffsetDateTime deletedAt;
+    private SimpleUserResponse author;
 
     public static DaydreamResponse from(Daydream daydream, BigDecimal progress) {
         return DaydreamResponse.builder()
@@ -72,5 +74,11 @@ public class DaydreamResponse {
                 .updatedAt(daydream.getUpdatedAt())
                 .deletedAt(daydream.getDeletedAt())
                 .build();
+    }
+
+    public static DaydreamResponse from(Daydream daydream, BigDecimal progress, User author) {
+        DaydreamResponse response = from(daydream, progress);
+        response.setAuthor(SimpleUserResponse.from(author));
+        return response;
     }
 }
