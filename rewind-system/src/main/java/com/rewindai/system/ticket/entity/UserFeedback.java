@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 /**
  * 用户反馈实体
  *
@@ -22,13 +24,16 @@ public class UserFeedback extends BaseEntity {
     private Long id;
 
     @Column(name = "user_id")
-    private Long userId;
+    private UUID userId;
 
     @Column(name = "user_nickname", length = 100)
     private String userNickname;
 
     @Column(name = "category", length = 100)
     private String category;
+
+    @Column(name = "category_id")
+    private Long categoryId;
 
     @Column(name = "title", nullable = false, length = 200)
     private String title;
@@ -38,6 +43,9 @@ public class UserFeedback extends BaseEntity {
 
     @Column(name = "contact_info", length = 200)
     private String contactInfo;
+
+    @Column(name = "contact", length = 200)
+    private String contact;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 50)

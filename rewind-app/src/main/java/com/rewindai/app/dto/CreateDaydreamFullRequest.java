@@ -17,6 +17,11 @@ import java.util.List;
 @Data
 public class CreateDaydreamFullRequest {
 
+    /**
+     * 草稿ID（如果是从草稿开启，传入此字段）
+     */
+    private String id;
+
     @NotBlank(message = "标题不能为空")
     @Size(max = 200, message = "标题最多200字符")
     private String title;

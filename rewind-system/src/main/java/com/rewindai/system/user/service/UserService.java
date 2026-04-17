@@ -88,4 +88,26 @@ public class UserService {
             userRepository.save(user);
         });
     }
+
+    /**
+     * 更新用户头像
+     */
+    @Transactional
+    public User updateAvatar(UUID userId, String avatarUrl) {
+        return userRepository.findById(userId).map(user -> {
+            user.setAvatarUrl(avatarUrl);
+            return userRepository.save(user);
+        }).orElseThrow(() -> new RuntimeException("用户不存在"));
+    }
+
+    /**
+     * 更新用户昵称
+     */
+    @Transactional
+    public User updateNickname(UUID userId, String nickname) {
+        return userRepository.findById(userId).map(user -> {
+            user.setNickname(nickname);
+            return userRepository.save(user);
+        }).orElseThrow(() -> new RuntimeException("用户不存在"));
+    }
 }

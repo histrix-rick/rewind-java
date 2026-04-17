@@ -5,6 +5,7 @@ import com.rewindai.common.core.result.Result;
 import com.rewindai.system.daydream.entity.*;
 import com.rewindai.system.daydream.enums.DreamPrivacy;
 import com.rewindai.system.daydream.enums.DreamStatus;
+import com.rewindai.system.daydream.repository.DaydreamRepository;
 import com.rewindai.system.daydream.service.*;
 import com.rewindai.system.user.entity.User;
 import com.rewindai.system.user.entity.UserAttribute;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 public class DaydreamController {
 
     private final DaydreamService daydreamService;
+    private final DaydreamRepository daydreamRepository;
     private final UserService userService;
     private final AttributeService attributeService;
     private final UserWalletService userWalletService;
@@ -129,7 +131,10 @@ public class DaydreamController {
                     .collect(Collectors.toList());
         }
 
-        Daydream saved = daydreamService.createFull(userId, daydream, user.getBirthDate(), context, relationships);
+        // 解析草稿ID（如果有）
+        UUID draftId = request.getId() != null ? UUID.fromString(request.getId()) : null;
+
+        Daydream saved = daydreamService.createFullFromDraft(draftId, userId, daydream, user.getBirthDate(), context, relationships);
 
         // 创建白日梦奖励 10 梦想币
         userWalletService.addCoins(userId, new BigDecimal("10"),
@@ -141,6 +146,58 @@ public class DaydreamController {
                     "公开分享白日梦奖励", TransactionType.SHARE, saved.getId(), "DAYDREAM_PUBLISH");
         }
 
+        BigDecimal progress = daydreamService.calculateProgress(saved);
+        return Result.success(DaydreamResponse.from(saved, progress));
+    }
+
+    @Operation(summary = "暂存白日梦（草稿）")
+    @PostMapping("/draft")
+    public Result<DaydreamResponse> saveDraft(@Valid @RequestBody UpdateDaydreamRequest request,
+                                               Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+
+        Daydream daydream = Daydream.builder()
+                .title(request.getTitle())
+                .description(request.getDescription())
+                .coverUrl(request.getCoverUrl())
+                .startDate(request.getStartDate())
+                .privacy(request.getPrivacy())
+                .build();
+
+        // 转换context
+        com.rewindai.system.daydream.entity.DreamContext context = null;
+        if (request.getContext() != null) {
+            context = com.rewindai.system.daydream.entity.DreamContext.builder()
+                    .identityId(request.getContext().getIdentityId())
+                    .financialAmount(request.getContext().getFinancialAmount())
+                    .educationLevelId(request.getContext().getEducationLevelId())
+                    .birthProvince(request.getContext().getBirthProvince())
+                    .birthCity(request.getContext().getBirthCity())
+                    .birthDistrict(request.getContext().getBirthDistrict())
+                    .birthAddress(request.getContext().getBirthAddress())
+                    .dreamProvince(request.getContext().getDreamProvince())
+                    .dreamCity(request.getContext().getDreamCity())
+                    .dreamDistrict(request.getContext().getDreamDistrict())
+                    .dreamAddress(request.getContext().getDreamAddress())
+                    .build();
+        }
+
+        // 转换relationships
+        List<com.rewindai.system.daydream.entity.DreamRelationship> relationships = null;
+        if (request.getRelationships() != null && !request.getRelationships().isEmpty()) {
+            relationships = request.getRelationships().stream()
+                    .map(req -> com.rewindai.system.daydream.entity.DreamRelationship.builder()
+                            .personName(req.getPersonName())
+                            .relationshipTypeId(req.getRelationshipTypeId())
+                            .intimacyLevel(req.getIntimacyLevel())
+                            .intimacyDescription(req.getIntimacyDescription())
+                            .notes(req.getNotes())
+                            .build())
+                    .toList();
+        }
+
+        UUID id = request.getId() != null ? UUID.fromString(request.getId()) : null;
+        Daydream saved = daydreamService.saveDraft(id, userId, daydream, context, relationships);
         BigDecimal progress = daydreamService.calculateProgress(saved);
         return Result.success(DaydreamResponse.from(saved, progress));
     }
@@ -183,7 +240,10 @@ public class DaydreamController {
         // 获取作者信息
         User author = userService.findById(daydream.getUserId()).orElse(null);
 
-        return Result.success(DaydreamResponse.from(daydream, progress, author));
+        // 检查点赞状态
+        boolean isLiked = daydreamService.isLikedByUser(id, userId);
+
+        return Result.success(DaydreamResponse.from(daydream, progress, author, isLiked));
     }
 
     @Operation(summary = "获取白日梦完整详情（包含上下文和关系）")
@@ -209,27 +269,51 @@ public class DaydreamController {
             response.setUserAttribute(UserAttributeResponse.from(userAttribute));
         }
 
-        // 获取梦境初始上下文（最早的节点）
+        // 获取梦境上下文：优先找node_id为null的（草稿），没有则找最早的节点
         List<DreamContext> contexts = dreamContextService.getContextsByDreamId(id);
         if (!contexts.isEmpty()) {
-            DreamContext firstContext = contexts.get(contexts.size() - 1); // 最早的在最后
-            DreamContextDetailResponse contextDetail = DreamContextDetailResponse.from(firstContext);
+            DreamContext contextToUse = null;
+            // 优先找node_id为null的草稿上下文
+            for (DreamContext ctx : contexts) {
+                if (ctx.getNodeId() == null) {
+                    contextToUse = ctx;
+                    break;
+                }
+            }
+            // 如果没有草稿上下文，找最早的节点上下文（按createdAt DESC排序，最早的在最后）
+            if (contextToUse == null) {
+                contextToUse = contexts.get(contexts.size() - 1);
+            }
+            DreamContextDetailResponse contextDetail = DreamContextDetailResponse.from(contextToUse);
 
             // 填充关联信息
-            if (firstContext.getIdentityId() != null) {
-                userIdentityService.findById(firstContext.getIdentityId())
+            if (contextToUse.getIdentityId() != null) {
+                userIdentityService.findById(contextToUse.getIdentityId())
                         .ifPresent(identity -> contextDetail.setIdentity(UserIdentityResponse.from(identity)));
             }
-            if (firstContext.getEducationLevelId() != null) {
-                educationLevelService.findById(firstContext.getEducationLevelId())
+            if (contextToUse.getEducationLevelId() != null) {
+                educationLevelService.findById(contextToUse.getEducationLevelId())
                         .ifPresent(level -> contextDetail.setEducationLevel(EducationLevelResponse.from(level)));
             }
 
             response.setContext(contextDetail);
         }
 
-        // 获取社会关系列表
+        // 获取社会关系列表：优先找node_id为null的（草稿），没有则找最早的节点
         List<DreamRelationship> relationships = dreamRelationshipService.getRelationshipsByDream(id);
+        if (!relationships.isEmpty()) {
+            // 检查是否有node_id为null的草稿关系
+            boolean hasDraftRelationships = relationships.stream().anyMatch(rel -> rel.getNodeId() == null);
+            if (hasDraftRelationships) {
+                // 只使用node_id为null的草稿关系
+                relationships = relationships.stream()
+                        .filter(rel -> rel.getNodeId() == null)
+                        .toList();
+            } else {
+                // 找最早节点的关系（需要先确定最早的节点）
+                // 这里简化处理：使用所有关系，前端会处理
+            }
+        }
         List<DreamRelationshipDetailResponse> relationshipDetails = relationships.stream()
                 .map(rel -> {
                     DreamRelationshipDetailResponse detail = DreamRelationshipDetailResponse.from(rel);
@@ -336,14 +420,28 @@ public class DaydreamController {
         return Result.success(DaydreamResponse.from(daydream, progress));
     }
 
-    @Operation(summary = "点赞白日梦")
+    @Operation(summary = "切换点赞状态（点赞/取消点赞）")
+    @PostMapping("/{id}/toggle-like")
+    public Result<LikeStatusResponse> toggleLike(@PathVariable UUID id, Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        Object[] result = daydreamService.toggleLike(id, userId);
+        LikeStatusResponse status = LikeStatusResponse.builder()
+                .liked((Boolean) result[0])
+                .likeCount((Long) result[1])
+                .build();
+        return Result.success(status);
+    }
+
+    @Operation(summary = "点赞白日梦（已废弃，请使用toggle-like）")
+    @Deprecated
     @PostMapping("/{id}/like")
     public Result<Void> like(@PathVariable UUID id) {
         daydreamService.incrementLikeCount(id);
         return Result.success();
     }
 
-    @Operation(summary = "取消点赞")
+    @Operation(summary = "取消点赞（已废弃，请使用toggle-like）")
+    @Deprecated
     @PostMapping("/{id}/unlike")
     public Result<Void> unlike(@PathVariable UUID id) {
         daydreamService.decrementLikeCount(id);
@@ -390,7 +488,8 @@ public class DaydreamController {
     @Operation(summary = "获取公开白日梦列表")
     @GetMapping("/public")
     public Result<Page<DaydreamResponse>> getPublicDaydreams(
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable,
+            Authentication authentication) {
         Page<Daydream> daydreams = daydreamService.getPublicDaydreams(pageable);
 
         // 批量获取作者信息
@@ -400,10 +499,19 @@ public class DaydreamController {
         var userMap = userService.findAllByIds(userIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
+        // 批量获取点赞状态
+        UUID currentUserId = authentication != null ? UUID.fromString(authentication.getName()) : null;
+        java.util.Map<UUID, Boolean> likeStatusMap = currentUserId != null
+                ? daydreamService.getLikeStatusBatch(
+                        daydreams.getContent().stream().map(Daydream::getId).collect(Collectors.toList()),
+                        currentUserId)
+                : java.util.Collections.emptyMap();
+
         return Result.success(daydreams.map(d -> {
             BigDecimal progress = daydreamService.calculateProgress(d);
             User author = userMap.get(d.getUserId());
-            return DaydreamResponse.from(d, progress, author);
+            Boolean isLiked = likeStatusMap.getOrDefault(d.getId(), false);
+            return DaydreamResponse.from(d, progress, author, isLiked);
         }));
     }
 
@@ -411,7 +519,8 @@ public class DaydreamController {
     @GetMapping("/search")
     public Result<Page<DaydreamResponse>> searchPublicDaydreams(
             @RequestParam String keyword,
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable,
+            Authentication authentication) {
         Page<Daydream> daydreams = daydreamService.searchPublicDaydreams(keyword, pageable);
 
         // 批量获取作者信息
@@ -421,10 +530,19 @@ public class DaydreamController {
         var userMap = userService.findAllByIds(userIds).stream()
                 .collect(Collectors.toMap(User::getId, u -> u));
 
+        // 批量获取点赞状态
+        UUID currentUserId = authentication != null ? UUID.fromString(authentication.getName()) : null;
+        java.util.Map<UUID, Boolean> likeStatusMap = currentUserId != null
+                ? daydreamService.getLikeStatusBatch(
+                        daydreams.getContent().stream().map(Daydream::getId).collect(Collectors.toList()),
+                        currentUserId)
+                : java.util.Collections.emptyMap();
+
         return Result.success(daydreams.map(d -> {
             BigDecimal progress = daydreamService.calculateProgress(d);
             User author = userMap.get(d.getUserId());
-            return DaydreamResponse.from(d, progress, author);
+            Boolean isLiked = likeStatusMap.getOrDefault(d.getId(), false);
+            return DaydreamResponse.from(d, progress, author, isLiked);
         }));
     }
 
@@ -444,5 +562,35 @@ public class DaydreamController {
         UUID userId = UUID.fromString(authentication.getName());
         UserAttribute attribute = attributeService.getOrCreateAttribute(userId);
         return Result.success(UserAttributeResponse.from(attribute));
+    }
+
+    @Operation(summary = "获取精选梦境（按点赞数排序）")
+    @GetMapping("/featured")
+    public Result<Page<DaydreamResponse>> getFeaturedDaydreams(
+            @PageableDefault(size = 20, sort = "likeCount") Pageable pageable,
+            Authentication authentication) {
+        Page<Daydream> daydreams = daydreamRepository.findFeaturedDaydreams(pageable);
+
+        // 批量获取作者信息
+        var userIds = daydreams.getContent().stream()
+                .map(Daydream::getUserId)
+                .collect(Collectors.toSet());
+        var userMap = userService.findAllByIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
+        // 批量获取点赞状态
+        UUID currentUserId = authentication != null ? UUID.fromString(authentication.getName()) : null;
+        java.util.Map<UUID, Boolean> likeStatusMap = currentUserId != null
+                ? daydreamService.getLikeStatusBatch(
+                        daydreams.getContent().stream().map(Daydream::getId).collect(Collectors.toList()),
+                        currentUserId)
+                : java.util.Collections.emptyMap();
+
+        return Result.success(daydreams.map(d -> {
+            BigDecimal progress = daydreamService.calculateProgress(d);
+            User author = userMap.get(d.getUserId());
+            Boolean isLiked = likeStatusMap.getOrDefault(d.getId(), false);
+            return DaydreamResponse.from(d, progress, author, isLiked);
+        }));
     }
 }

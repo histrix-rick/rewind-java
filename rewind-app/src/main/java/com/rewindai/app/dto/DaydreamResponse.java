@@ -47,6 +47,8 @@ public class DaydreamResponse {
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
     private OffsetDateTime deletedAt;
+    private OffsetDateTime authorUpdatedAt;
+    private Boolean isLiked;
     private SimpleUserResponse author;
 
     public static DaydreamResponse from(Daydream daydream, BigDecimal progress) {
@@ -73,7 +75,20 @@ public class DaydreamResponse {
                 .createdAt(daydream.getCreatedAt())
                 .updatedAt(daydream.getUpdatedAt())
                 .deletedAt(daydream.getDeletedAt())
+                .authorUpdatedAt(daydream.getAuthorUpdatedAt())
                 .build();
+    }
+
+    public static DaydreamResponse from(Daydream daydream, BigDecimal progress, Boolean isLiked) {
+        DaydreamResponse response = from(daydream, progress);
+        response.setIsLiked(isLiked);
+        return response;
+    }
+
+    public static DaydreamResponse from(Daydream daydream, BigDecimal progress, User author, Boolean isLiked) {
+        DaydreamResponse response = from(daydream, progress, author);
+        response.setIsLiked(isLiked);
+        return response;
     }
 
     public static DaydreamResponse from(Daydream daydream, BigDecimal progress, User author) {

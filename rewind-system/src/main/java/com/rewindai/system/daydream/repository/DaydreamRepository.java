@@ -66,6 +66,10 @@ public interface DaydreamRepository extends JpaRepository<Daydream, UUID> {
     @Query("UPDATE Daydream d SET d.shareCount = d.shareCount + 1 WHERE d.id = :id")
     void incrementShareCount(@Param("id") UUID id);
 
+    @Modifying
+    @Query("UPDATE Daydream d SET d.likeCount = :likeCount WHERE d.id = :id")
+    void updateLikeCount(@Param("id") UUID id, @Param("likeCount") int likeCount);
+
     /**
      * 后台管理：分页查询所有白日梦（包括所有状态）
      */
@@ -168,6 +172,23 @@ public interface DaydreamRepository extends JpaRepository<Daydream, UUID> {
     long countByUserId(UUID userId);
 
     /**
+     * 统计：指定用户的公开梦境数
+     */
+    long countByUserIdAndIsPublicTrue(UUID userId);
+
+    /**
+     * 统计：指定用户的总浏览量
+     */
+    @Query("SELECT COALESCE(SUM(d.viewCount), 0) FROM Daydream d WHERE d.userId = :userId")
+    long sumViewCountByUserId(@Param("userId") UUID userId);
+
+    /**
+     * 统计：指定用户的总点赞数
+     */
+    @Query("SELECT COALESCE(SUM(d.likeCount), 0) FROM Daydream d WHERE d.userId = :userId")
+    long sumLikeCountByUserId(@Param("userId") UUID userId);
+
+    /**
      * 统计：待审核内容数（reviewStatus = 0）
      */
     @Query("SELECT COUNT(d) FROM Daydream d WHERE d.reviewStatus = com.rewindai.system.daydream.enums.ReviewStatus.PENDING")
@@ -178,4 +199,10 @@ public interface DaydreamRepository extends JpaRepository<Daydream, UUID> {
      */
     @Query("SELECT d FROM Daydream d WHERE d.createdAt >= :start AND d.createdAt < :end ORDER BY d.createdAt DESC")
     List<Daydream> findByDateRangeForExport(@Param("start") java.time.OffsetDateTime start, @Param("end") java.time.OffsetDateTime end);
+
+    /**
+     * 查询精选梦境（按点赞数排序的公开梦境）
+     */
+    @Query("SELECT d FROM Daydream d WHERE d.isPublic = true AND d.status = com.rewindai.system.daydream.enums.DreamStatus.ACTIVE ORDER BY d.likeCount DESC")
+    Page<Daydream> findFeaturedDaydreams(Pageable pageable);
 }

@@ -8,6 +8,7 @@ import com.rewindai.system.ticket.service.TicketService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -104,11 +105,8 @@ public class AdminTicketController {
     @Operation(summary = "添加工单回复", description = "为工单添加回复")
     public Result<TicketReply> addReply(
             @PathVariable Long id,
-            @RequestParam Long replyerId,
-            @RequestParam String replyerName,
-            @RequestParam(defaultValue = "true") Boolean isAdmin,
-            @RequestBody String content) {
-        return Result.success(ticketService.addReply(id, replyerId, replyerName, isAdmin, content));
+            @RequestBody AddTicketReplyRequest request) {
+        return Result.success(ticketService.addReply(id, request.getReplyerId(), request.getReplyerName(), request.getIsAdmin(), request.getContent()));
     }
 
     @GetMapping("/stats")
@@ -121,5 +119,13 @@ public class AdminTicketController {
         stats.put("closedCount", ticketService.countByStatus(TicketStatus.CLOSED));
         stats.put("unassignedCount", ticketService.countUnassigned());
         return Result.success(stats);
+    }
+
+    @Data
+    public static class AddTicketReplyRequest {
+        private Long replyerId;
+        private String replyerName;
+        private Boolean isAdmin = true;
+        private String content;
     }
 }

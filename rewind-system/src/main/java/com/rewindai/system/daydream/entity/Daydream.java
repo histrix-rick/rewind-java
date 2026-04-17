@@ -115,6 +115,9 @@ public class Daydream {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    @Column(name = "author_updated_at")
+    private OffsetDateTime authorUpdatedAt;
+
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
 

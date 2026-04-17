@@ -31,13 +31,13 @@ public class SysVerificationCodeService {
     /**
      * 发送验证码
      */
-    public String sendCode(String target, String scene) {
+    public String sendCode(String receiver, String type) {
         String code = generateCode();
 
         SysVerificationCode verificationCode = SysVerificationCode.builder()
-                .target(target)
+                .receiver(receiver)
                 .code(code)
-                .scene(scene)
+                .type(type)
                 .isUsed(false)
                 .expireAt(OffsetDateTime.now().plusMinutes(CODE_EXPIRE_MINUTES))
                 .build();
@@ -47,8 +47,8 @@ public class SysVerificationCodeService {
         // 演示环境：直接输出验证码到日志
         log.info("========================================");
         log.info("验证码已发送:");
-        log.info("  目标: {}", target);
-        log.info("  场景: {}", scene);
+        log.info("  接收者: {}", receiver);
+        log.info("  类型: {}", type);
         log.info("  验证码: {}", code);
         log.info("  有效期: {} 分钟", CODE_EXPIRE_MINUTES);
         log.info("========================================");
@@ -59,10 +59,10 @@ public class SysVerificationCodeService {
     /**
      * 验证验证码
      */
-    public boolean verifyCode(String target, String scene, String code) {
+    public boolean verifyCode(String receiver, String type, String code) {
         Optional<SysVerificationCode> opt = verificationCodeRepository
-                .findFirstByTargetAndSceneAndIsUsedFalseAndExpireAtAfterOrderByCreatedAtDesc(
-                        target, scene, OffsetDateTime.now()
+                .findFirstByReceiverAndTypeAndIsUsedFalseAndExpireAtAfterOrderByCreatedAtDesc(
+                        receiver, type, OffsetDateTime.now()
                 );
 
         if (opt.isEmpty()) {

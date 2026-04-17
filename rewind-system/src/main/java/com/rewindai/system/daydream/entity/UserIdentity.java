@@ -9,6 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 /**
  * 用户身份预设实体
@@ -22,7 +23,8 @@ import java.time.OffsetDateTime;
 @Entity
 @Table(name = "user_identities", indexes = {
         @Index(name = "idx_identity_active", columnList = "is_active"),
-        @Index(name = "idx_identity_sort", columnList = "sort_order")
+        @Index(name = "idx_identity_sort", columnList = "sort_order"),
+        @Index(name = "idx_identity_user", columnList = "user_id")
 })
 public class UserIdentity {
 
@@ -30,8 +32,14 @@ public class UserIdentity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id")
+    private UUID userId;
+
     @Column(name = "name", nullable = false, length = 100)
     private String name;
+
+    @Column(name = "icon", length = 50)
+    private String icon;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;

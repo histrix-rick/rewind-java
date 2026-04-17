@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 /**
  * 用户身份预设响应 DTO
@@ -20,7 +21,9 @@ import java.time.OffsetDateTime;
 public class UserIdentityResponse {
 
     private Long id;
+    private UUID userId;
     private String name;
+    private String icon;
     private String description;
     private Integer minAge;
     private Integer maxAge;
@@ -32,7 +35,9 @@ public class UserIdentityResponse {
     public static UserIdentityResponse from(UserIdentity identity) {
         return UserIdentityResponse.builder()
                 .id(identity.getId())
+                .userId(identity.getUserId())
                 .name(identity.getName())
+                .icon(identity.getIcon())
                 .description(identity.getDescription())
                 .minAge(identity.getMinAge())
                 .maxAge(identity.getMaxAge())

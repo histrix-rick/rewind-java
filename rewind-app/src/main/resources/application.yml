@@ -22,7 +22,7 @@ spring:
       validation-timeout: 5000
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: false
     properties:
       hibernate:
@@ -40,6 +40,14 @@ spring:
           max-idle: 8
           min-idle: 0
           max-wait: -1ms
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: false
+    clean-disabled: false
+    encoding: UTF-8
 
 jwt:
   secret: ${JWT_SECRET:Rewind.ai_Secret_Key_2024_JWT_Token_Very_Long_Secret_For_HS256}

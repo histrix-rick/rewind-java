@@ -20,4 +20,7 @@ public interface DreamRelationshipRepository extends JpaRepository<DreamRelation
     List<DreamRelationship> findByDreamIdOrderByCreatedAtAsc(UUID dreamId);
 
     void deleteByDreamIdAndNodeId(UUID dreamId, UUID nodeId);
+
+    // 删除梦境的所有社会关系
+    void deleteByDreamId(UUID dreamId);
 }

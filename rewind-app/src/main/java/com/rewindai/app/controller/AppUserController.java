@@ -3,14 +3,18 @@ package com.rewindai.app.controller;
 import com.rewindai.app.dto.DaydreamResponse;
 import com.rewindai.app.dto.UserAttributeResponse;
 import com.rewindai.app.dto.UserDetailResponse;
+import com.rewindai.app.dto.UserStatsResponse;
 import com.rewindai.common.core.result.Result;
 import com.rewindai.system.daydream.entity.Daydream;
+import com.rewindai.system.daydream.repository.DaydreamRepository;
 import com.rewindai.system.daydream.service.DaydreamService;
 import com.rewindai.system.daydream.service.UserFollowService;
 import com.rewindai.system.user.entity.User;
 import com.rewindai.system.user.entity.UserAttribute;
+import com.rewindai.system.wallet.entity.UserWallet;
 import com.rewindai.system.user.service.AttributeService;
 import com.rewindai.system.user.service.UserService;
+import com.rewindai.system.wallet.service.UserWalletService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +43,8 @@ public class AppUserController {
     private final AttributeService attributeService;
     private final UserFollowService userFollowService;
     private final DaydreamService daydreamService;
+    private final DaydreamRepository daydreamRepository;
+    private final UserWalletService userWalletService;
 
     @GetMapping("/profile")
     @Operation(summary = "获取用户信息", description = "获取当前登录用户的信息")
@@ -100,5 +106,66 @@ public class AppUserController {
             var progress = daydreamService.calculateProgress(daydream);
             return DaydreamResponse.from(daydream, progress);
         }));
+    }
+
+    @GetMapping("/stats")
+    @Operation(summary = "获取用户统计数据", description = "获取当前登录用户的统计数据")
+    public Result<UserStatsResponse> getUserStats(Authentication authentication) {
+        String userIdStr = (String) authentication.getPrincipal();
+        UUID userId = UUID.fromString(userIdStr);
+
+        long dreamCount = daydreamRepository.countByUserId(userId);
+        long publicCount = daydreamRepository.countByUserIdAndIsPublicTrue(userId);
+        long totalViews = daydreamRepository.sumViewCountByUserId(userId);
+        long totalLikes = daydreamRepository.sumLikeCountByUserId(userId);
+
+        UserWallet wallet = userWalletService.getOrCreateWallet(userId);
+        long totalEarned = wallet.getTotalEarned() != null ? wallet.getTotalEarned().longValue() : 0L;
+
+        UserStatsResponse stats = UserStatsResponse.builder()
+                .dreamCount(dreamCount)
+                .publicCount(publicCount)
+                .totalViews(totalViews)
+                .totalLikes(totalLikes)
+                .totalEarned(totalEarned)
+                .build();
+
+        return Result.success(stats);
+    }
+
+    @PutMapping("/avatar")
+    @Operation(summary = "更新用户头像", description = "更新当前登录用户的头像")
+    public Result<User> updateAvatar(
+            @RequestBody UpdateAvatarRequest request,
+            Authentication authentication) {
+        String userIdStr = (String) authentication.getPrincipal();
+        UUID userId = UUID.fromString(userIdStr);
+        User user = userService.updateAvatar(userId, request.getAvatarUrl());
+        return Result.success(user);
+    }
+
+    @PutMapping("/nickname")
+    @Operation(summary = "更新用户昵称", description = "更新当前登录用户的昵称")
+    public Result<User> updateNickname(
+            @RequestBody UpdateNicknameRequest request,
+            Authentication authentication) {
+        String userIdStr = (String) authentication.getPrincipal();
+        UUID userId = UUID.fromString(userIdStr);
+        User user = userService.updateNickname(userId, request.getNickname());
+        return Result.success(user);
+    }
+
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class UpdateAvatarRequest {
+        private String avatarUrl;
+    }
+
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class UpdateNicknameRequest {
+        private String nickname;
     }
 }

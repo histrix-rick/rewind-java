@@ -40,7 +40,19 @@ public enum ConfigKey {
     PUSH_ENABLED("push.enabled", "启用推送", ConfigCategory.PUSH, "BOOLEAN", "true"),
     PUSH_TIME_START("push.time.start", "推送开始时间", ConfigCategory.PUSH, "STRING", "08:00"),
     PUSH_TIME_END("push.time.end", "推送结束时间", ConfigCategory.PUSH, "STRING", "22:00"),
-    PUSH_DAILY_LIMIT("push.daily.limit", "每日推送次数限制", ConfigCategory.PUSH, "INTEGER", "5");
+    PUSH_DAILY_LIMIT("push.daily.limit", "每日推送次数限制", ConfigCategory.PUSH, "INTEGER", "5"),
+
+    // ========== 短信配置 ==========
+    SMS_ENABLED("sms.enabled", "启用短信服务", ConfigCategory.SMS, "BOOLEAN", "true"),
+    SMS_DEFAULT_PROVIDER("sms.default.provider", "默认短信运营商", ConfigCategory.SMS, "STRING", "ALIYUN"),
+    SMS_TEST_CODE("sms.test.code", "测试验证码", ConfigCategory.SMS, "STRING", "123456"),
+    SMS_CODE_LENGTH("sms.code.length", "验证码长度", ConfigCategory.SMS, "INTEGER", "6"),
+    SMS_CODE_EXPIRE_MINUTES("sms.code.expire.minutes", "验证码有效期(分钟)", ConfigCategory.SMS, "INTEGER", "5"),
+    SMS_SEND_INTERVAL_SECONDS("sms.send.interval.seconds", "发送间隔(秒)", ConfigCategory.SMS, "INTEGER", "60"),
+    SMS_DAILY_LIMIT("sms.daily.limit", "每日发送上限", ConfigCategory.SMS, "INTEGER", "20"),
+
+    // ========== 实名认证配置 ==========
+    REALNAME_VERIFY_ENABLED("realname.verify.enabled", "启用实名认证验证", ConfigCategory.REALNAME, "BOOLEAN", "true");
 
     private final String key;
     private final String name;

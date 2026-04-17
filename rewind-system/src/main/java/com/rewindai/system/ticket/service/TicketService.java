@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * 工单 Service
@@ -39,6 +40,10 @@ public class TicketService {
         return ticketRepository.findByStatus(status, pageable);
     }
 
+    public List<Ticket> findByUserId(UUID userId) {
+        return ticketRepository.findByUserId(userId);
+    }
+
     public Page<Ticket> searchTickets(String keyword, Pageable pageable) {
         return ticketRepository.searchTickets(keyword, pageable);
     }
@@ -48,10 +53,15 @@ public class TicketService {
     }
 
     @Transactional
-    public Ticket createTicket(Ticket ticket) {
+    public Ticket create(Ticket ticket) {
         ticket.setStatus(TicketStatus.PENDING);
         ticket.setReplyCount(0);
         return ticketRepository.save(ticket);
+    }
+
+    @Transactional
+    public Ticket createTicket(Ticket ticket) {
+        return create(ticket);
     }
 
     @Transactional

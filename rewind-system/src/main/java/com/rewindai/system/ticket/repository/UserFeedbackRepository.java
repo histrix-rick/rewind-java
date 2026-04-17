@@ -9,6 +9,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.UUID;
+
 /**
  * 用户反馈 Repository
  *
@@ -21,7 +24,9 @@ public interface UserFeedbackRepository extends JpaRepository<UserFeedback, Long
 
     Page<UserFeedback> findByCategory(String category, Pageable pageable);
 
-    Page<UserFeedback> findByUserId(Long userId, Pageable pageable);
+    List<UserFeedback> findByUserId(UUID userId);
+
+    Page<UserFeedback> findByUserId(UUID userId, Pageable pageable);
 
     @Query("SELECT f FROM UserFeedback f WHERE " +
            "(:keyword IS NULL OR :keyword = '' OR " +

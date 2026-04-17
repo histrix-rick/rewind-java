@@ -9,6 +9,10 @@ import com.rewindai.system.admin.entity.SysAdmin;
 import com.rewindai.system.admin.enums.AdminStatus;
 import com.rewindai.system.admin.service.SysAdminService;
 import com.rewindai.system.admin.service.SysVerificationCodeService;
+import com.rewindai.system.config.enums.ConfigKey;
+import com.rewindai.system.config.service.SysConfigService;
+import com.rewindai.system.sms.enums.SmsTemplateType;
+import com.rewindai.system.sms.service.SmsService;
 import com.rewindai.system.user.entity.User;
 import com.rewindai.system.user.enums.Gender;
 import com.rewindai.system.user.enums.UserStatus;
@@ -41,6 +45,8 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final SysVerificationCodeService verificationCodeService;
     private final IdCardCheckService idCardCheckService;
+    private final SmsService smsService;
+    private final SysConfigService sysConfigService;
 
     private static final String SCENE_ADMIN_LOGIN = "ADMIN_LOGIN";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -200,7 +206,7 @@ public class AuthService {
     }
 
     /**
-     * 修改密码
+     * 修改密码 - 管理员
      */
     @Transactional
     public void changePassword(Long adminId, ChangePasswordRequest request) {
@@ -221,6 +227,56 @@ public class AuthService {
         // 更新密码
         sysAdminService.updatePassword(adminId, passwordEncoder.encode(request.getNewPassword()));
         log.info("管理员 {} 修改密码成功", admin.getUsername());
+    }
+
+    /**
+     * 修改密码 - 用户（通过旧密码）
+     */
+    @Transactional
+    public void changeUserPassword(java.util.UUID userId, ChangeUserPasswordRequest request) {
+        // 校验两次新密码是否一致
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "两次新密码输入不一致");
+        }
+
+        // 查找用户
+        User user = userService.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 校验旧密码
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.PASSWORD_ERROR, "旧密码错误");
+        }
+
+        // 更新密码
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userService.save(user);
+        log.info("用户 {} 修改密码成功", user.getUsername());
+    }
+
+    /**
+     * 重置密码 - 用户（通过短信验证码）
+     */
+    @Transactional
+    public void resetUserPassword(ResetUserPasswordRequest request) {
+        // 校验两次新密码是否一致
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "两次新密码输入不一致");
+        }
+
+        // 查找用户
+        User user = userService.findByPhoneNumber(request.getPhone())
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "该手机号未注册"));
+
+        // 验证短信验证码
+        if (!smsService.verifyCode(request.getPhone(), SmsTemplateType.VERIFY, request.getCode())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "验证码错误或已过期");
+        }
+
+        // 更新密码
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userService.save(user);
+        log.info("用户 {} 重置密码成功", user.getUsername());
     }
 
     private AdminLoginResponse generateAdminLoginResponse(SysAdmin admin) {
@@ -280,5 +336,93 @@ public class AuthService {
             ip = ip.split(",")[0].trim();
         }
         return ip;
+    }
+
+    /**
+     * 单独实名认证验证
+     */
+    public RealNameVerifyResponse verifyRealName(RealNameVerifyRequest request) {
+        // 验证身份证号格式
+        IdCardUtil.validate(request.getIdCardNo());
+        LocalDate birthDateFromIdCard = IdCardUtil.extractBirthDate(request.getIdCardNo());
+        Integer genderFromIdCard = IdCardUtil.extractGender(request.getIdCardNo());
+
+        // 检查是否启用实名认证验证
+        boolean verifyEnabled = sysConfigService.getBooleanValue(ConfigKey.REALNAME_VERIFY_ENABLED.getKey());
+
+        if (!verifyEnabled) {
+            log.warn("实名认证验证已禁用，直接通过: name={}", request.getRealName());
+            return RealNameVerifyResponse.builder()
+                    .passed(true)
+                    .message("实名认证验证已禁用，直接通过")
+                    .gender(genderFromIdCard)
+                    .birthDate(birthDateFromIdCard.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                    .build();
+        }
+
+        // 身份证二要素认证
+        log.info("开始身份证二要素认证: name={}", request.getRealName());
+        IdCardCheckService.IdCardCheckResult checkResult = idCardCheckService.verify(request.getIdCardNo(), request.getRealName());
+
+        if (!checkResult.isPassed()) {
+            log.warn("身份证二要素认证失败: name={}, message={}", request.getRealName(), checkResult.getMessage());
+            return RealNameVerifyResponse.builder()
+                    .passed(false)
+                    .message(checkResult.getMessage())
+                    .build();
+        }
+
+        log.info("身份证二要素认证成功: name={}", request.getRealName());
+        return RealNameVerifyResponse.builder()
+                .passed(true)
+                .message("实名认证通过")
+                .gender(genderFromIdCard)
+                .birthDate(birthDateFromIdCard.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .build();
+    }
+
+    /**
+     * 发送短信验证码
+     */
+    public void sendSmsVerificationCode(SendSmsCodeRequest request) {
+        SmsTemplateType templateType = SmsTemplateType.valueOf(request.getTemplateType());
+        String code = smsService.sendVerificationCode(request.getPhone(), templateType);
+        log.info("短信验证码已发送: phone={}, templateType={}, code={}", request.getPhone(), templateType, code);
+    }
+
+    /**
+     * 短信验证码登录
+     */
+    @Transactional
+    public LoginResponse smsLogin(SmsLoginRequest request, HttpServletRequest httpRequest) {
+        String phone = request.getPhone();
+        String code = request.getCode();
+
+        // 验证验证码
+        if (!smsService.verifyCode(phone, SmsTemplateType.LOGIN, code)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "验证码错误或已过期");
+        }
+
+        // 查找用户
+        User user = userService.findByPhoneNumber(phone)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, "该手机号未注册"));
+
+        // 检查账号状态
+        if (user.getStatus() == UserStatus.BANNED) {
+            throw new BusinessException(ErrorCode.USER_BANNED, "账号已被封禁");
+        }
+        if (user.getStatus() == UserStatus.MUTED) {
+            log.warn("用户 {} 登录，账号处于禁言状态", user.getUsername());
+        }
+
+        // 更新登录信息
+        String ip = getClientIp(httpRequest);
+        String deviceId = httpRequest.getHeader("X-Device-Id");
+        userService.updateLoginInfo(user.getId(), ip, deviceId);
+
+        log.info("用户 {} (短信验证码) 登录成功", user.getUsername());
+
+        // 生成Token并返回
+        return generateLoginResponse(user);
     }
 }

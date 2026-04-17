@@ -16,11 +16,13 @@ import java.util.Optional;
 @Repository
 public interface SysVerificationCodeRepository extends JpaRepository<SysVerificationCode, Long> {
 
-    Optional<SysVerificationCode> findFirstByTargetAndSceneAndIsUsedFalseAndExpireAtAfterOrderByCreatedAtDesc(
-            String target, String scene, OffsetDateTime now
+    Optional<SysVerificationCode> findFirstByReceiverAndTypeAndIsUsedFalseAndExpireAtAfterOrderByCreatedAtDesc(
+            String receiver, String type, OffsetDateTime now
     );
 
-    List<SysVerificationCode> findByTargetAndSceneAndIsUsedFalseAndExpireAtAfter(
-            String target, String scene, OffsetDateTime now
+    Optional<SysVerificationCode> findFirstByReceiverAndCreatedAtAfterOrderByCreatedAtDesc(
+            String receiver, OffsetDateTime createdAt
     );
+
+    long countByReceiverAndCreatedAtAfter(String receiver, OffsetDateTime createdAt);
 }

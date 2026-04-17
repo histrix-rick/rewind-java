@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 用户身份预设 Repository
@@ -20,4 +21,8 @@ public interface UserIdentityRepository extends JpaRepository<UserIdentity, Long
 
     List<UserIdentity> findByMinAgeLessThanEqualAndMaxAgeGreaterThanEqualAndIsActiveTrueOrderBySortOrderAsc(
             Integer minAge, Integer maxAge);
+
+    List<UserIdentity> findByUserIdIsNullAndIsActiveTrueOrderBySortOrderAsc();
+
+    List<UserIdentity> findByUserIdAndIsActiveTrueOrderBySortOrderAsc(UUID userId);
 }

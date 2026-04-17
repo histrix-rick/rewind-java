@@ -130,7 +130,42 @@ public class SysConfigService {
     @Transactional
     public void batchUpdateConfigs(Map<String, String> configs) {
         for (Map.Entry<String, String> entry : configs.entrySet()) {
-            updateConfigByKey(entry.getKey(), entry.getValue());
+            String key = entry.getKey();
+            String value = entry.getValue();
+
+            Optional<SysConfig> existingConfig = findByKey(key);
+            if (existingConfig.isPresent()) {
+                // 配置存在，更新它
+                SysConfig config = existingConfig.get();
+                config.setConfigValue(value);
+                sysConfigRepository.save(config);
+                log.info("系统配置更新成功: configKey={}, value={}", key, value);
+            } else {
+                // 配置不存在，尝试从ConfigKey枚举创建默认配置
+                ConfigKey configKey = null;
+                for (ConfigKey ck : ConfigKey.values()) {
+                    if (ck.getKey().equals(key)) {
+                        configKey = ck;
+                        break;
+                    }
+                }
+
+                if (configKey != null) {
+                    // 从枚举创建配置
+                    SysConfig config = SysConfig.builder()
+                            .configKey(configKey.getKey())
+                            .configName(configKey.getName())
+                            .configValue(value)
+                            .configCategory(configKey.getCategory())
+                            .valueType(configKey.getValueType())
+                            .sortOrder(configKey.ordinal())
+                            .build();
+                    sysConfigRepository.save(config);
+                    log.info("系统配置创建并更新成功: configKey={}, value={}", key, value);
+                } else {
+                    throw new BusinessException(ErrorCode.BAD_REQUEST, "配置不存在: " + key);
+                }
+            }
         }
     }
 

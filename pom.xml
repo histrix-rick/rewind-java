@@ -39,6 +39,7 @@
         <springdoc.version>2.3.0</springdoc.version>
         <mybatis-plus.version>3.5.5</mybatis-plus.version>
         <flyway.version>10.10.0</flyway.version>
+        <langchain4j.version>0.29.1</langchain4j.version>
     </properties>
 
     <dependencyManagement>
@@ -122,6 +123,15 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-data-redis</artifactId>
                 <version>3.2.4</version>
+            </dependency>
+
+            <!-- LangChain4j BOM -->
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-bom</artifactId>
+                <version>${langchain4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>

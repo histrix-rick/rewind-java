@@ -8,6 +8,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 /**
  * 工单实体
  *
@@ -23,8 +25,8 @@ public class Ticket extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
-    private Long userId;
+    @Column(name = "user_id")
+    private UUID userId;
 
     @Column(name = "user_nickname", length = 100)
     private String userNickname;

@@ -70,4 +70,48 @@ public class AuthController {
         authService.changePassword(adminId, request);
         return Result.success("密码修改成功", null);
     }
+
+    @PostMapping("/realname/verify")
+    @Operation(summary = "实名认证单独验证", description = "在注册流程中单独验证实名认证信息")
+    public Result<RealNameVerifyResponse> verifyRealName(@Valid @RequestBody RealNameVerifyRequest request) {
+        log.info("实名认证验证请求: realName={}", request.getRealName());
+        RealNameVerifyResponse response = authService.verifyRealName(request);
+        return Result.success(response);
+    }
+
+    @PostMapping("/sms/send-code")
+    @Operation(summary = "发送短信验证码", description = "发送手机验证码，支持登录、注册、实名认证等场景")
+    public Result<Void> sendSmsVerificationCode(@Valid @RequestBody SendSmsCodeRequest request) {
+        log.info("发送短信验证码请求: phone={}, templateType={}", request.getPhone(), request.getTemplateType());
+        authService.sendSmsVerificationCode(request);
+        return Result.success("验证码已发送", null);
+    }
+
+    @PostMapping("/sms/login")
+    @Operation(summary = "短信验证码登录", description = "使用手机号和验证码登录")
+    public Result<LoginResponse> smsLogin(@Valid @RequestBody SmsLoginRequest request,
+                                           HttpServletRequest httpRequest) {
+        log.info("短信验证码登录请求: phone={}", request.getPhone());
+        LoginResponse response = authService.smsLogin(request, httpRequest);
+        return Result.success(response);
+    }
+
+    @PostMapping("/user/change-password")
+    @Operation(summary = "用户修改密码", description = "用户通过旧密码修改密码")
+    public Result<Void> changeUserPassword(@Valid @RequestBody ChangeUserPasswordRequest request,
+                                              Authentication authentication) {
+        String userIdStr = (String) authentication.getPrincipal();
+        java.util.UUID userId = java.util.UUID.fromString(userIdStr);
+        log.info("用户修改密码请求: userId={}", userId);
+        authService.changeUserPassword(userId, request);
+        return Result.success("密码修改成功，请重新登录", null);
+    }
+
+    @PostMapping("/user/reset-password")
+    @Operation(summary = "用户重置密码", description = "用户通过短信验证码重置密码")
+    public Result<Void> resetUserPassword(@Valid @RequestBody ResetUserPasswordRequest request) {
+        log.info("用户重置密码请求: phone={}", request.getPhone());
+        authService.resetUserPassword(request);
+        return Result.success("密码重置成功，请使用新密码登录", null);
+    }
 }

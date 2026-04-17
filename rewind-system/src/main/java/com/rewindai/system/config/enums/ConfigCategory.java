@@ -29,5 +29,15 @@ public enum ConfigCategory {
     /**
      * 推送配置
      */
-    PUSH
+    PUSH,
+
+    /**
+     * 短信配置
+     */
+    SMS,
+
+    /**
+     * 实名认证配置
+     */
+    REALNAME
 }

@@ -17,11 +17,14 @@ import com.rewindai.system.daydream.enums.QuestionSubject;
 import com.rewindai.system.daydream.enums.RelationshipCategory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 梦境元数据 Controller
@@ -45,14 +48,55 @@ public class DreamMetaController {
 
     // ========== 用户身份 ==========
 
-    @Operation(summary = "获取所有激活的用户身份")
+    @Operation(summary = "获取所有激活的用户身份（系统身份 + 当前用户自定义身份）")
     @GetMapping("/identities")
-    public Result<List<UserIdentityResponse>> getActiveIdentities() {
-        List<UserIdentity> all = userIdentityRepository.findAll();
-        log.info("查询所有用户身份，数量: {}", all.size());
-        List<UserIdentity> active = all.stream().filter(UserIdentity::getIsActive).toList();
-        log.info("过滤后激活的用户身份，数量: {}", active.size());
-        return Result.success(active.stream().map(UserIdentityResponse::from).toList());
+    public Result<List<UserIdentityResponse>> getActiveIdentities(Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        List<UserIdentity> identities = userIdentityService.getAllIdentitiesForUser(userId);
+        log.info("查询用户身份，数量: {}", identities.size());
+        return Result.success(identities.stream().map(UserIdentityResponse::from).toList());
+    }
+
+    @Operation(summary = "获取系统身份")
+    @GetMapping("/identities/system")
+    public Result<List<UserIdentityResponse>> getSystemIdentities() {
+        List<UserIdentity> identities = userIdentityService.getSystemIdentities();
+        return Result.success(identities.stream().map(UserIdentityResponse::from).toList());
+    }
+
+    @Operation(summary = "获取用户自定义身份")
+    @GetMapping("/identities/custom")
+    public Result<List<UserIdentityResponse>> getUserIdentities(Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        List<UserIdentity> identities = userIdentityService.getUserIdentities(userId);
+        return Result.success(identities.stream().map(UserIdentityResponse::from).toList());
+    }
+
+    @Operation(summary = "创建用户自定义身份")
+    @PostMapping("/identities/custom")
+    public Result<UserIdentityResponse> createUserIdentity(
+            @Valid @RequestBody CreateUserIdentityRequest request,
+            Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        UserIdentity identity = UserIdentity.builder()
+                .name(request.getName())
+                .icon(request.getIcon())
+                .minAge(request.getMinAge())
+                .maxAge(request.getMaxAge())
+                .description(request.getDescription())
+                .build();
+        UserIdentity saved = userIdentityService.createUserIdentity(userId, identity);
+        return Result.success(UserIdentityResponse.from(saved));
+    }
+
+    @Operation(summary = "删除用户自定义身份")
+    @DeleteMapping("/identities/custom/{identityId}")
+    public Result<Void> deleteUserIdentity(
+            @PathVariable Long identityId,
+            Authentication authentication) {
+        UUID userId = UUID.fromString(authentication.getName());
+        userIdentityService.deleteUserIdentity(userId, identityId);
+        return Result.success();
     }
 
     @Operation(summary = "根据年龄获取适用的用户身份")

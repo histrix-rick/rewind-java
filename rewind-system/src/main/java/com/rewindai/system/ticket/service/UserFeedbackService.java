@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * 用户反馈 Service
@@ -43,14 +44,33 @@ public class UserFeedbackService {
         return feedbackRepository.findByCategory(category, pageable);
     }
 
+    public List<UserFeedback> findByUserId(UUID userId) {
+        return feedbackRepository.findByUserId(userId);
+    }
+
     public Page<UserFeedback> searchFeedbacks(String keyword, Pageable pageable) {
         return feedbackRepository.searchFeedbacks(keyword, pageable);
     }
 
     @Transactional
-    public UserFeedback createFeedback(UserFeedback feedback) {
+    public UserFeedback create(UserFeedback feedback) {
         feedback.setStatus(FeedbackStatus.SUBMITTED);
+        // 向后兼容：设置旧的category字段和contactInfo字段
+        if (feedback.getCategory() == null && feedback.getCategoryId() != null) {
+            feedback.setCategory(String.valueOf(feedback.getCategoryId()));
+        }
+        if (feedback.getContactInfo() == null && feedback.getContact() != null) {
+            feedback.setContactInfo(feedback.getContact());
+        }
+        if (feedback.getTitle() == null) {
+            feedback.setTitle("用户反馈");
+        }
         return feedbackRepository.save(feedback);
+    }
+
+    @Transactional
+    public UserFeedback createFeedback(UserFeedback feedback) {
+        return create(feedback);
     }
 
     @Transactional

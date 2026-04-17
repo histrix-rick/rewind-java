@@ -37,4 +37,7 @@ public interface TimelineNodeRepository extends JpaRepository<TimelineNode, UUID
     // 获取指定分支中序号大于指定值的所有节点（用于回滚删除）
     List<TimelineNode> findByDreamIdAndBranchIdAndSequenceNumGreaterThanOrderBySequenceNumDesc(
             UUID dreamId, UUID branchId, Integer sequenceNum);
+
+    // 删除梦境的所有时间轴节点
+    void deleteByDreamId(UUID dreamId);
 }

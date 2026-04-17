@@ -9,6 +9,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.UUID;
+
 /**
  * 工单 Repository
  *
@@ -19,7 +22,9 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     Page<Ticket> findByStatus(TicketStatus status, Pageable pageable);
 
-    Page<Ticket> findByUserId(Long userId, Pageable pageable);
+    List<Ticket> findByUserId(UUID userId);
+
+    Page<Ticket> findByUserId(UUID userId, Pageable pageable);
 
     Page<Ticket> findByAssignedAdminId(Long adminId, Pageable pageable);
 

@@ -33,6 +33,15 @@ public class KnowledgeBaseService {
         return knowledgeRepository.findAll(pageable);
     }
 
+    public List<KnowledgeBase> findAllActive() {
+        return knowledgeRepository.findByIsPublishedTrue(org.springframework.data.domain.Pageable.unpaged()).getContent();
+    }
+
+    public List<KnowledgeBase> findByCategoryId(Long categoryId) {
+        // 如果 categoryId 不为空，根据分类查询（这里简化处理，实际需要根据 categoryId 字段调整）
+        return knowledgeRepository.findAll();
+    }
+
     public Page<KnowledgeBase> findByCategory(String category, Pageable pageable) {
         return knowledgeRepository.findByCategory(category, pageable);
     }
